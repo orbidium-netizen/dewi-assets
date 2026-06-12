@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dewey — Textbooks</title>
+<link rel="stylesheet" href="dewey.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+<script>
+const DEWEY_SUPABASE_URL = 'https://ivdkipygpasvowigarfb.supabase.co';
+const DEWEY_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2ZGtpcHlncGFzdm93aWdhcmZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMzA2NzcsImV4cCI6MjA5MjcwNjY3N30.qKN6tCqyyIIVoPAVl1o2_2gtUkfBh2aBWDP_sIDcxgE';
+const DEWEY_APP_URL = window.location.origin + '/dewey-v6.html';
+const { createClient } = supabase;
+const db = createClient(DEWEY_SUPABASE_URL, DEWEY_SUPABASE_KEY);
+</script>
+<style>
+/* ── Textbook page — warm authoritative palette ── */
+:root {
+  --tb-ink:      #1E1610;
+  --tb-forest:   #2C4A35;
+  --tb-burg:     #6B2737;
+  --tb-slate:    #4A6B82;
+  --tb-mustard:  #8B6914;
+  --tb-paper:    #F5EFE4;
+  --tb-cream:    #FAF6EF;
+  --tb-warm:     #EDE4D3;
+  --tb-deep:     #DDD0B8;
+}
+
+/* Subject card colours — one per subject category */
+.sub-math       { --sub-accent: #2C4A35; --sub-lt: #EBF2EC; }
+.sub-science    { --sub-accent: #4A6B82; --sub-lt: #EDF2F6; }
+.sub-social     { --sub-accent: #8B6914; --sub-lt: #F9F2E0; }
+.sub-english    { --sub-accent: #6B2737; --sub-lt: #F8EDEE; }
+.sub-french     { --sub-accent: #7A5C8A; --sub-lt: #F3EEF7; }
+.sub-art        { --sub-accent: #5C7A3E; --sub-lt: #EEF5E8; }
+.sub-phys       { --sub-accent: #5C4A32; --sub-lt: #EDE5D8; }
+.sub-music      { --sub-accent: #3A6B6B; --sub-lt: #E8F5F5; }
+.sub-other      { --sub-accent: #5C5C5C; --sub-lt: #EFEFEF; }
+
+/* ── Layout ── */
+.main { margin-left: var(--sidebar-w); min-height: 100vh; }
+
+/* ── Hero ── */
+.tb-hero {
+  background: linear-gradient(135deg, var(--tb-ink) 0%, #2A1A0A 100%);
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.tb-hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cpath d='M0 60L60 0M-10 10L10-10M50 70L70 50' stroke='rgba(245,239,228,0.03)' stroke-width='1'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+.hero-inner {
+  position: relative; z-index: 1;
+  padding: 40px var(--content-pad) 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.hero-left { padding-bottom: 36px; }
+
+/* Stat blocks at bottom of hero */
+.hero-stats-row {
+  display: flex;
+  gap: 0;
+  position: relative; z-index: 1;
+  margin-top: 32px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+}
+
+.hero-stat-block {
+  flex: 1;
+  padding: 20px var(--content-pad);
+  border-right: 1px solid rgba(255,255,255,0.07);
+  display: flex; align-items: center; gap: 14px;
+}
+.hero-stat-block:last-child { border-right: none; }
+
+.hsb-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 38px; font-weight: 700;
+  color: var(--tb-paper); line-height: 1;
+}
+.hsb-num.warn { color: var(--tb-burg); }
+.hsb-lbl { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(245,239,228,0.38); margin-top: 3px; }
+.hsb-icon { font-size: 22px; opacity: 0.5; }
+
+/* ── Scan bar — sticky below hero ── */
+.scan-bar {
+  background: var(--tb-cream);
+  border-bottom: 1px solid var(--tb-deep);
+  padding: 14px var(--content-pad);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: var(--shadow-sm);
+}
+
+.scan-bar-label {
+  font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--tb-ink); white-space: nowrap;
+}
+
+.scan-mode-pills { display: flex; gap: 6px; }
+
+.scan-mode-pill {
+  padding: 6px 14px; border-radius: var(--r-pill);
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  border: 1.5px solid var(--tb-deep);
+  background: var(--tb-paper); color: var(--ink-soft);
+  transition: all 0.15s;
+}
+.scan-mode-pill.active.checkout { background: var(--tb-burg); color: var(--tb-paper); border-color: var(--tb-burg); }
+.scan-mode-pill.active.return   { background: var(--tb-forest); color: var(--tb-paper); border-color: var(--tb-forest); }
+.scan-mode-pill.active.register { background: var(--tb-slate); color: var(--tb-paper); border-color: var(--tb-slate); }
+
+.scan-input-wrap {
+  flex: 1; min-width: 200px; max-width: 380px;
+  display: flex; gap: 8px;
+}
+
+.scan-bar-input {
+  flex: 1;
+  background: var(--tb-paper);
+  border: 1.5px solid var(--tb-deep);
+  border-radius: var(--r-pill);
+  padding: 9px 18px;
+  font-family: 'Jost', sans-serif; font-size: 13px;
+  color: var(--tb-ink); outline: none;
+  transition: all 0.2s;
+}
+.scan-bar-input:focus {
+  border-color: var(--tb-forest);
+  box-shadow: 0 0 0 3px rgba(44,74,53,0.1);
+}
+.scan-bar-input::placeholder { color: var(--ink-ghost); }
+
+.student-select-wrap { display: flex; align-items: center; gap: 8px; }
+.student-select-wrap label { font-size: 12px; color: var(--ink-soft); white-space: nowrap; }
+
+.scan-feedback {
+  flex: 1; min-width: 160px;
+  font-size: 12px; line-height: 1.5;
+  padding: 6px 14px; border-radius: 10px;
+  display: none;
+}
+.scan-feedback.show { display: block; }
+.scan-feedback.ok   { background: var(--forest-lt); color: var(--tb-forest); }
+.scan-feedback.err  { background: var(--burg-lt); color: var(--tb-burg); }
+
+.usb-pill {
+  display: none;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--tb-forest); background: var(--forest-lt);
+  padding: 4px 12px; border-radius: var(--r-pill);
+  white-space: nowrap;
+}
+.scan-bar-input:focus ~ .usb-pill { display: inline-flex; }
+
+/* ── Content ── */
+.tb-content { padding: 32px var(--content-pad) 48px; }
+
+/* ── Subject cards grid ── */
+.subject-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 36px;
+}
+
+.subject-card {
+  background: var(--tb-cream);
+  border: 1px solid var(--tb-deep);
+  border-radius: var(--r-card);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.subject-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+.subject-card-top {
+  background: var(--sub-accent);
+  padding: 18px 20px 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+.subject-card-top::after {
+  content: attr(data-icon);
+  position: absolute; right: 14px; bottom: -8px;
+  font-size: 52px; opacity: 0.15;
+  pointer-events: none;
+}
+
+.subject-card-grade {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.16em;
+  text-transform: uppercase; color: rgba(255,255,255,0.5);
+  margin-bottom: 5px;
+}
+
+.subject-card-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px; font-weight: 700;
+  color: #fff; line-height: 1.1;
+}
+
+.subject-card-isbn {
+  font-size: 10px; font-family: monospace;
+  color: rgba(255,255,255,0.4); margin-top: 3px;
+}
+
+/* Progress bar */
+.subject-progress {
+  height: 4px;
+  background: rgba(255,255,255,0.15);
+  position: relative;
+}
+.subject-progress-fill {
+  height: 100%;
+  background: rgba(255,255,255,0.6);
+  transition: width 0.6s ease;
+}
+
+.subject-card-body { padding: 14px 18px 16px; }
+
+.subject-counts {
+  display: flex; gap: 16px; margin-bottom: 12px;
+}
+.subject-count {
+  display: flex; flex-direction: column; gap: 1px;
+}
+.count-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px; font-weight: 700; line-height: 1;
+  color: var(--tb-ink);
+}
+.count-num.out { color: var(--tb-burg); }
+.count-lbl { font-size: 10px; font-weight: 500; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-ghost); }
+
+.subject-detail-row {
+  display: flex; align-items: center; justify-content: space-between;
+  border-top: 1px solid var(--tb-deep); padding-top: 10px; margin-top: 4px;
+}
+
+.overdue-badge {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.05em;
+  color: var(--tb-burg); background: var(--burg-lt);
+  padding: 2px 8px; border-radius: var(--r-pill);
+  display: none;
+}
+.overdue-badge.show { display: inline-block; }
+
+/* ── Detail drawer (slides in when card clicked) ── */
+.detail-drawer {
+  background: var(--tb-cream);
+  border: 1.5px solid var(--tb-deep);
+  border-radius: var(--r-card);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  margin-bottom: 24px;
+  display: none;
+  animation: fadeUp 0.25s ease;
+}
+.detail-drawer.open { display: block; }
+
+.drawer-header {
+  padding: 16px 22px 12px;
+  border-bottom: 1px solid var(--tb-deep);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.drawer-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px; font-weight: 600; color: var(--tb-ink);
+}
+
+.drawer-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--tb-deep); }
+.drawer-tab {
+  padding: 9px 18px; font-size: 12px; font-weight: 500;
+  color: var(--ink-soft); cursor: pointer;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: all 0.15s;
+}
+.drawer-tab:hover { color: var(--tb-ink); }
+.drawer-tab.active { color: var(--tb-burg); border-bottom-color: var(--tb-burg); font-weight: 600; }
+
+.drawer-body { padding: 18px 22px; }
+
+/* Checked-out list inside drawer */
+.copy-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 0; border-bottom: 1px solid var(--tb-warm);
+}
+.copy-row:last-child { border-bottom: none; }
+.copy-id { font-family: monospace; font-size: 11px; font-weight: 600; color: var(--tb-slate); background: var(--slate-lt); padding: 2px 7px; border-radius: 5px; flex-shrink: 0; }
+.copy-student { flex: 1; font-size: 13px; font-weight: 500; color: var(--tb-ink); }
+.copy-days { font-size: 11px; color: var(--ink-soft); }
+.copy-days.late { color: var(--tb-burg); font-weight: 600; }
+.copy-status-in { font-size: 10px; font-weight: 600; color: var(--tb-forest); background: var(--forest-lt); padding: 2px 8px; border-radius: var(--r-pill); }
+.copy-status-out { font-size: 10px; font-weight: 600; color: var(--tb-burg); background: var(--burg-lt); padding: 2px 8px; border-radius: var(--r-pill); }
+
+/* ── Print label sheet ── */
+
+  
+  .label-print-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .label-print-item { border: 1px dashed #bbb; border-radius: 4px; padding: 8px; text-align: center; page-break-inside: avoid; }
+  .label-print-item svg { max-width: 100%; height: 44px; }
+  .lp-title { font-size: 8px; font-weight: 600; font-family: Arial, sans-serif; margin-top: 4px; line-height: 1.3; }
+  .lp-id    { font-size: 9px; font-family: monospace; color: #444; margin-top: 1px; }
+  .lp-school{ font-size: 7px; color: #999; font-family: Arial, sans-serif; margin-top: 1px; }
+}
+
+/* ── Empty state ── */
+.tb-empty {
+  text-align: center; padding: 60px 24px;
+  grid-column: 1 / -1;
+}
+.tb-empty-icon { font-size: 52px; opacity: 0.25; margin-bottom: 14px; }
+.tb-empty-title { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 600; color: var(--tb-ink); margin-bottom: 8px; }
+.tb-empty-body  { font-size: 13px; color: var(--ink-soft); max-width: 320px; margin: 0 auto 20px; line-height: 1.65; }
+
+/* ── Responsive ── */
+@media (max-width: 860px) {
+  .hero-stats-row { flex-direction: column; }
+  .hero-stat-block { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.07); padding: 14px var(--content-pad); }
+  .scan-bar { flex-direction: column; align-items: flex-start; }
+  .scan-input-wrap { width: 100%; max-width: 100%; }
+}
+@media (max-width: 620px) {
+  .main { margin-left: 0; margin-bottom: 60px; }
+  .hero-inner { padding: 28px 16px 0; }
+  .tb-content { padding: 20px 16px 40px; }
+  .scan-bar { padding: 12px 16px; }
+  .subject-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ Sidebar ══ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-wordmark">Dewey</div>
+    <div class="logo-tagline">Classroom Library</div>
+  </div>
+  <nav class="sidebar-nav">
+    <a class="nav-item" href="dewey-v6.html"><div class="nav-icon">📚</div>Library</a>
+    <a class="nav-item active" href="assets.html"><div class="nav-icon">📘</div>Textbooks<span class="nav-badge badge-mustard" id="nav-out-badge" style="display:none">0 out</span></a>
+    <a class="nav-item" href="dewey-v6.html"><div class="nav-icon">🔄</div>Circulation</a>
+    <a class="nav-item" href="dewey-v6.html"><div class="nav-icon">👤</div>Students</a>
+    <div style="height:1px;background:rgba(255,255,255,0.07);margin:8px 16px"></div>
+    <a class="nav-item" href="index.html"><div class="nav-icon">🏠</div>Sales page</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="nav-item" onclick="printAllLabels()" style="width:100%;text-align:left">
+      <div class="nav-icon">🖨️</div>Print Labels
+    </button>
+  </div>
+</aside>
+
+<!-- ══ Main ══ -->
+<main class="main">
+
+  <!-- Hero -->
+  <div class="tb-hero">
+    <div class="hero-inner">
+      <div class="hero-left">
+        <div class="hero-eyebrow">Dewey — Textbook Tracking</div>
+        <h1 class="hero-title">Know where every<br>classroom item is. Always.</h1>
+        <p class="hero-sub">Scan to register, scan to check out, scan to return. Every copy gets a unique label — so June is never a surprise.</p>
+      </div>
+    </div>
+    <div class="hero-stats-row">
+      <div class="hero-stat-block">
+        <div class="hsb-icon">📚</div>
+        <div><div class="hsb-num" id="stat-total">0</div><div class="hsb-lbl">Total copies</div></div>
+      </div>
+      <div class="hero-stat-block">
+        <div class="hsb-icon">✅</div>
+        <div><div class="hsb-num" id="stat-in">0</div><div class="hsb-lbl">In classroom</div></div>
+      </div>
+      <div class="hero-stat-block">
+        <div class="hsb-icon">📤</div>
+        <div><div class="hsb-num warn" id="stat-out">0</div><div class="hsb-lbl">Checked out</div></div>
+      </div>
+      <div class="hero-stat-block">
+        <div class="hsb-icon">⚠️</div>
+        <div><div class="hsb-num warn" id="stat-overdue">0</div><div class="hsb-lbl">Overdue (&gt;14 days)</div></div>
+      </div>
+      <div class="hero-stat-block">
+        <div class="hsb-icon">📖</div>
+        <div><div class="hsb-num" id="stat-subjects">0</div><div class="hsb-lbl">Subjects</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sticky scan bar -->
+  <div class="scan-bar">
+    <div class="scan-bar-label">Mode:</div>
+    <div class="scan-mode-pills">
+      <div class="scan-mode-pill active checkout" onclick="setMode('checkout',this)">📤 Check out</div>
+      <div class="scan-mode-pill return"          onclick="setMode('return',this)">📥 Return</div>
+      <div class="scan-mode-pill register"        onclick="setMode('register',this)">➕ Register new</div>
+    </div>
+
+    <!-- Student selector — shown in checkout mode -->
+    <div class="student-select-wrap" id="student-wrap">
+      <label>Student:</label>
+      <select class="select-pill" id="tb-student-select" style="min-width:180px">
+        <option value="">— select —</option>
+      </select>
+    </div>
+
+    <div class="scan-input-wrap">
+      <input class="scan-bar-input" id="tb-scan-input" type="text"
+        placeholder="Scan DWY label or ISBN…"
+        onfocus="document.getElementById('tb-usb-pill').style.display='inline-flex'"
+        onblur="document.getElementById('tb-usb-pill').style.display='none'"
+        onkeydown="if(event.key==='Enter')processScan()">
+      <button class="btn btn-primary btn-sm" onclick="processScan()">Scan</button>
+    </div>
+
+    <div id="tb-usb-pill" style="display:none;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--tb-forest);background:var(--forest-lt);padding:4px 12px;border-radius:var(--r-pill);white-space:nowrap">🔌 USB ready</div>
+
+    <div class="scan-feedback" id="tb-feedback"></div>
+  </div>
+
+  <!-- Content -->
+  <div class="tb-content">
+
+    <!-- Register panel — shown only in register mode -->
+    <div id="register-panel" style="display:none;margin-bottom:24px">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-header">
+          <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--tb-ink)">Register New Textbook</div>
+          <button class="btn btn-secondary btn-sm" onclick="setMode('checkout',document.querySelector('.scan-mode-pill.checkout'))">Done registering</button>
+        </div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--ink-soft);margin-bottom:18px;line-height:1.6">Scan any barcode &mdash; book ISBN, Chromebook serial, device asset tag, or any item identifier. Fill in the category, and Dewey generates a unique <strong>DWY-XXXX</strong> label. For tech items with serial numbers, scan the device barcode directly to check out without a Dewey label.</p>
+
+          <div id="register-book-info" style="display:none;background:var(--forest-lt);border:1px solid rgba(44,74,53,0.2);border-radius:12px;padding:12px 16px;margin-bottom:16px;display:none;align-items:center;gap:12px">
+            <img id="reg-cover" src="" alt="" style="width:40px;height:56px;object-fit:cover;border-radius:4px;border:1px solid var(--tb-deep);display:none">
+            <div>
+              <div id="reg-title" style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--tb-ink)"></div>
+              <div id="reg-author" style="font-size:12px;color:var(--ink-soft);margin-top:2px"></div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <label class="field-label">Subject</label>
+              <select class="select-pill" id="reg-subject" style="min-width:180px" onchange="updateRegisterForm()">
+                <optgroup label="Classroom Books">
+                  <option value="library">Classroom Library Book</option>
+                  <option value="math">Mathematics Textbook</option>
+                  <option value="science">Science Textbook</option>
+                  <option value="social">Social Studies Textbook</option>
+                  <option value="english">English / Language Arts Textbook</option>
+                  <option value="french">French Textbook</option>
+                  <option value="art">Art Textbook</option>
+                  <option value="phys">Physical Education Textbook</option>
+                  <option value="music">Music Textbook</option>
+                </optgroup>
+                <optgroup label="Technology">
+                  <option value="chromebook">Chromebook</option>
+                  <option value="ipad">iPad / Tablet</option>
+                  <option value="laptop">Laptop</option>
+                  <option value="headphones">Headphones / Earbuds</option>
+                  <option value="charger">Charger / Cable</option>
+                  <option value="mouse">Mouse / Keyboard</option>
+                </optgroup>
+                <optgroup label="Classroom Equipment">
+                  <option value="calculator">Calculator</option>
+                  <option value="microscope">Microscope / Lab Equipment</option>
+                  <option value="instrument">Musical Instrument</option>
+                  <option value="sports">Sports Equipment</option>
+                  <option value="art-supply">Art Supply / Kit</option>
+                </optgroup>
+                <optgroup label="Other">
+                  <option value="other">Other Item</option>
+                </optgroup>
+              </select>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <label class="field-label">Grade</label>
+              <select class="select-pill" id="reg-grade" style="min-width:110px">
+                <option value="">No grade</option>
+                <option value="K">Kindergarten</option>
+                <option value="1">Grade 1</option>
+                <option value="2">Grade 2</option>
+                <option value="3">Grade 3</option>
+                <option value="4">Grade 4</option>
+                <option value="5">Grade 5</option>
+                <option value="6">Grade 6</option>
+                <option value="7">Grade 7</option>
+                <option value="8">Grade 8</option>
+                <option value="9">Grade 9</option>
+                <option value="10">Grade 10</option>
+                <option value="11">Grade 11</option>
+                <option value="12">Grade 12</option>
+              </select>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <label class="field-label">Number of copies</label>
+              <input class="input-pill" id="reg-copies" type="number" min="1" max="200" value="1" style="width:90px">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px" id="serial-field" style="display:none">
+              <label class="field-label">Serial / Asset Tag (optional)</label>
+              <input class="input-pill" id="reg-serial" type="text" placeholder="e.g. 5CD1234XYZ" style="width:200px">
+              <div style="font-size:11px;color:var(--ink-ghost);margin-top:2px">Scan the barcode on the device, or type it manually</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <label class="field-label">Custom title (optional)</label>
+              <input class="input-pill" id="reg-custom-title" type="text" placeholder="Override book title…" style="min-width:200px">
+            </div>
+            <div style="padding-top:20px">
+              <button class="btn btn-primary btn-sm" onclick="registerTextbook()">Register Items</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subject cards -->
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:var(--tb-ink)">Textbook Inventory</div>
+        <div style="font-size:13px;color:var(--ink-soft);margin-top:2px">One card per subject — tap to see individual copies</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" onclick="exportAllCSV()">📄 Export CSV</button>
+        <button class="btn btn-secondary btn-sm" onclick="printAllLabels()">🖨 Print Labels</button>
+      </div>
+    </div>
+
+    <!-- Detail drawer (hidden until a card is tapped) -->
+    <div class="detail-drawer" id="detail-drawer">
+      <div class="drawer-header">
+        <div class="drawer-title" id="drawer-title">Subject</div>
+        <button class="btn btn-secondary btn-sm" onclick="closeDrawer()">✕ Close</button>
+      </div>
+      <div class="drawer-tabs">
+        <div class="drawer-tab active" onclick="switchDrawerTab('out',this)">Checked Out</div>
+        <div class="drawer-tab" onclick="switchDrawerTab('in',this)">Available Copies</div>
+        <div class="drawer-tab" onclick="switchDrawerTab('all',this)">All Copies</div>
+      </div>
+      <div class="drawer-body" id="drawer-body"></div>
+    </div>
+
+    <div class="subject-grid" id="subject-grid">
+      <div class="tb-empty">
+        <div class="tb-empty-icon">📘</div>
+        <div class="tb-empty-title">No textbooks registered yet</div>
+        <div class="tb-empty-body">Switch to <strong>Register new</strong> mode above, scan a textbook ISBN, fill in the subject and grade, and Dewey will create unique labels for every copy.</div>
+        <button class="btn btn-primary" onclick="setMode('register', document.querySelector('.scan-mode-pill.register'))">➕ Register First Textbook</button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Print label sheet (invisible until print) -->
+<div class="label-sheet" id="label-sheet">
+  <div class="label-print-grid" id="label-print-grid"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container">
+  <div class="toast toast-success" id="tb-toast-ok">✓ Done</div>
+  <div class="toast toast-warning" id="tb-toast-err">⚠ Error</div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// DATA
+// ════════════════════════════════════════════════════════
+let textbooks = JSON.parse(localStorage.getItem('dw_textbooks') || '[]');
+let tbCounter = parseInt(localStorage.getItem('dw_tb_counter') || '0');
+let students  = JSON.parse(localStorage.getItem('dw_students') || '[]');
+let scanMode  = 'checkout';
+let activeDrawerSubjectKey = null;
+let activeDrawerTab = 'out';
+
+const SUBJECT_META = {
+  math:    { label: 'Mathematics',           icon: '➗', cls: 'sub-math' },
+  science: { label: 'Science',               icon: '🔬', cls: 'sub-science' },
+  social:  { label: 'Social Studies',        icon: '🌍', cls: 'sub-social' },
+  english: { label: 'English / Language Arts', icon: '✏️', cls: 'sub-english' },
+  french:  { label: 'French',                icon: '🥐', cls: 'sub-french' },
+  art:     { label: 'Art',                   icon: '🎨', cls: 'sub-art' },
+  phys:    { label: 'Physical Education',    icon: '⚽', cls: 'sub-phys' },
+  music:   { label: 'Music',                 icon: '🎵', cls: 'sub-music' },
+  other:   { label: 'Other',                 icon: '📗', cls: 'sub-other' },
+};
+
+function saveTB() {
+  localStorage.setItem('dw_textbooks', JSON.stringify(textbooks));
+  localStorage.setItem('dw_tb_counter', String(tbCounter));
+  updateStats();
+}
+
+function nextTBId() {
+  tbCounter++;
+  return 'DWY-' + String(tbCounter).padStart(4, '0');
+}
+
+// ════════════════════════════════════════════════════════
+// STATS
+// ════════════════════════════════════════════════════════
+function updateStats() {
+  const total   = textbooks.length;
+  const out     = textbooks.filter(t => t.status === 'out').length;
+  const inCount = total - out;
+  const today   = new Date();
+  const overdue = textbooks.filter(t => {
+    if (t.status !== 'out' || !t.checkedOutDate) return false;
+    return Math.floor((today - new Date(t.checkedOutDate)) / 86400000) > 14;
+  }).length;
+  const subjects = new Set(textbooks.map(t => t.subjectKey + (t.grade||''))).size;
+
+  document.getElementById('stat-total').textContent   = total;
+  document.getElementById('stat-in').textContent      = inCount;
+  document.getElementById('stat-out').textContent     = out;
+  document.getElementById('stat-overdue').textContent = overdue;
+  document.getElementById('stat-subjects').textContent= subjects;
+
+  const badge = document.getElementById('nav-out-badge');
+  if (out > 0) { badge.textContent = out + ' out'; badge.style.display = ''; }
+  else badge.style.display = 'none';
+}
+
+// ════════════════════════════════════════════════════════
+// SCAN MODE
+// ════════════════════════════════════════════════════════
+function setMode(mode, el) {
+  scanMode = mode;
+  document.querySelectorAll('.scan-mode-pill').forEach(p => p.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.getElementById('student-wrap').style.display   = mode === 'checkout' ? 'flex' : 'none';
+  document.getElementById('register-panel').style.display = mode === 'register' ? 'block' : 'none';
+
+  const placeholders = {
+    checkout: 'Scan DWY label to check out…',
+    return:   'Scan DWY label to return…',
+    register: 'Scan ISBN to look up book…',
+  };
+  document.getElementById('tb-scan-input').placeholder = placeholders[mode];
+  document.getElementById('tb-scan-input').focus();
+  clearFeedback();
+}
+
+// ════════════════════════════════════════════════════════
+// MAIN SCAN PROCESSOR
+// ════════════════════════════════════════════════════════
+function processScan() {
+  const raw = document.getElementById('tb-scan-input').value.trim();
+  if (!raw) return;
+
+  if (scanMode === 'register') {
+    lookupTBIsbn(raw);
+    return;
+  }
+
+  // Normalise DWY ID — accept DWY-0042 or 0042 or 42
+  const normId = raw.toUpperCase().startsWith('DWY-')
+    ? raw.toUpperCase()
+    : 'DWY-' + raw.replace(/^0+/, '').padStart(4, '0');
+
+  // Match on DWY label OR serial number directly
+  // Scanning a Chromebook serial barcode will find the registered asset
+  const book = textbooks.find(t =>
+    t.id === normId ||
+    t.id === 'DWY-' + raw.replace(/^DWY-?/i, '').replace(/^0+/, '').padStart(4, '0') ||
+    (t.serial && t.serial.trim().toUpperCase() === raw.trim().toUpperCase())
+  );
+
+  if (!book) {
+    showFeedback('err', `⚠ Asset ${raw} not found. Register it first in Register mode.`);
+    return;
+  }
+
+  if (scanMode === 'return') {
+    if (book.status !== 'out') { showFeedback('err', `${book.title} (Copy ${book.copyNum}) is already in — not checked out.`); }
+    else {
+      const was = book.checkedOutTo;
+      book.status = 'in'; book.checkedOutTo = ''; book.checkedOutDate = '';
+      saveTB(); renderSubjectCards();
+      if (activeDrawerSubjectKey) renderDrawerContent();
+      showFeedback('ok', `✓ Returned — ${book.title} (Copy ${book.copyNum}) from ${was}`);
+      showToast('ok', `✓ ${book.title} Copy ${book.copyNum} returned`);
+    }
+  } else if (scanMode === 'checkout') {
+    const student = document.getElementById('tb-student-select').value;
+    if (!student) { showFeedback('err', 'Select a student before scanning.'); return; }
+    if (book.status === 'out') {
+      showFeedback('err', `⚠ Copy ${book.copyNum} is already checked out to ${book.checkedOutTo}.`);
+    } else {
+      book.status = 'out'; book.checkedOutTo = student; book.checkedOutDate = new Date().toISOString();
+      saveTB(); renderSubjectCards();
+      if (activeDrawerSubjectKey) renderDrawerContent();
+      showFeedback('ok', `✓ Checked out — ${book.title} (Copy ${book.copyNum}) to ${student}`);
+      showToast('ok', `✓ ${book.title} → ${student}`);
+    }
+  }
+
+  document.getElementById('tb-scan-input').value = '';
+  setTimeout(() => document.getElementById('tb-scan-input').focus(), 80);
+}
+
+// ════════════════════════════════════════════════════════
+// ISBN LOOKUP + REGISTER
+// ════════════════════════════════════════════════════════
+async function lookupTBIsbn(raw) {
+  const isbn = raw.replace(/[^0-9Xx]/g, '');
+  if (isbn.length < 8) return;
+
+  showFeedback('ok', 'Looking up ISBN…');
+  let title = '', author = '', cover = '';
+  try {
+    const res  = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
+    const data = await res.json();
+    if (data[`ISBN:${isbn}`]) {
+      const b = data[`ISBN:${isbn}`];
+      title  = b.title || '';
+      author = (b.authors || []).map(a => a.name).join(', ');
+      cover  = b.cover ? (b.cover.medium || '') : '';
+    }
+  } catch(e) {}
+
+  if (!title) {
+    try {
+      const res  = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+      const data = await res.json();
+      if (data.items?.length) {
+        const v = data.items[0].volumeInfo;
+        title  = v.title || ''; author = (v.authors || []).join(', ');
+        cover  = v.imageLinks?.thumbnail || '';
+      }
+    } catch(e) {}
+  }
+
+  // Store on form
+  document.getElementById('tb-scan-input').dataset.isbn   = isbn;
+  document.getElementById('tb-scan-input').dataset.title  = title;
+  document.getElementById('tb-scan-input').dataset.author = author;
+
+  const info = document.getElementById('register-book-info');
+  info.style.display = 'flex';
+  document.getElementById('reg-title').textContent  = title || 'Book not found — check ISBN';
+  document.getElementById('reg-author').textContent = author;
+  const covEl = document.getElementById('reg-cover');
+  if (cover) { covEl.src = cover; covEl.style.display = 'block'; }
+  else covEl.style.display = 'none';
+  if (title) document.getElementById('reg-custom-title').placeholder = title;
+
+  clearFeedback();
+  document.getElementById('tb-scan-input').value = '';
+}
+
+function registerTextbook() {
+  const isbn    = document.getElementById('tb-scan-input').dataset.isbn || '';
+  const apiTitle= document.getElementById('tb-scan-input').dataset.title || '';
+  const author  = document.getElementById('tb-scan-input').dataset.author || '';
+  const subject = document.getElementById('reg-subject').value;
+  const grade   = document.getElementById('reg-grade').value;
+  const copies  = parseInt(document.getElementById('reg-copies').value) || 1;
+  const customT = document.getElementById('reg-custom-title').value.trim();
+  const serial  = document.getElementById('reg-serial')?.value.trim() || '';
+  const title   = customT || apiTitle || (subject === 'chromebook' ? 'Chromebook' : subject === 'ipad' ? 'iPad' : 'Unknown Item');
+
+  const subjectKey = subject + (grade ? '_' + grade : '');
+  const existing   = textbooks.filter(t => t.subjectKey === subjectKey).length;
+
+  for (let i = 0; i < copies; i++) {
+    textbooks.push({
+      id:             nextTBId(),
+      isbn,
+      serial:         copies === 1 ? serial : '',  // serial only meaningful for 1-copy tech items
+      title, author, subject, grade, subjectKey,
+      copyNum:        existing + i + 1,
+      status:         'in',
+      checkedOutTo:   '',
+      checkedOutDate: '',
+      registeredAt:   new Date().toISOString(),
+    });
+  }
+
+  saveTB();
+  renderSubjectCards();
+
+  // Reset
+  document.getElementById('tb-scan-input').dataset.isbn = '';
+  document.getElementById('register-book-info').style.display = 'none';
+  document.getElementById('reg-copies').value = '1';
+  document.getElementById('reg-custom-title').value = '';
+  document.getElementById('tb-scan-input').value = '';
+  document.getElementById('tb-scan-input').focus();
+
+  showToast('ok', `✓ ${copies} ${SUBJECT_META[subject]?.label||subject} textbook${copies>1?'s':''} registered`);
+}
+
+// ════════════════════════════════════════════════════════
+// SUBJECT CARDS
+// ════════════════════════════════════════════════════════
+function renderSubjectCards() {
+  const grid = document.getElementById('subject-grid');
+  if (!textbooks.length) {
+    grid.innerHTML = `<div class="tb-empty"><div class="tb-empty-icon">📘</div><div class="tb-empty-title">No textbooks registered yet</div><div class="tb-empty-body">Switch to <strong>Register new</strong> mode above, scan any barcode or type a description, and Dewey creates unique labels for every asset.</div><button class="btn btn-primary" onclick="setMode('register',document.querySelector('.scan-mode-pill.register'))">➕ Register First Textbook</button></div>`;
+    return;
+  }
+
+  // Group by subjectKey
+  const groups = {};
+  textbooks.forEach(t => {
+    if (!groups[t.subjectKey]) groups[t.subjectKey] = { books: [], subject: t.subject, grade: t.grade, title: t.title };
+    groups[t.subjectKey].books.push(t);
+  });
+
+  const today = new Date();
+  grid.innerHTML = Object.entries(groups).map(([key, g]) => {
+    const meta    = SUBJECT_META[g.subject] || SUBJECT_META.other;
+    const total   = g.books.length;
+    const out     = g.books.filter(b => b.status === 'out').length;
+    const inCount = total - out;
+    const overdue = g.books.filter(b => b.status === 'out' && b.checkedOutDate && Math.floor((today - new Date(b.checkedOutDate))/86400000) > 14).length;
+    const pct     = Math.round(inCount / total * 100);
+    const gradeLabel = g.grade ? (g.grade === 'K' ? 'Kindergarten' : 'Grade ' + g.grade) : '';
+    const displayTitle = g.title.length > 28 ? g.title.substring(0,28)+'…' : g.title;
+
+    return `<div class="subject-card ${meta.cls}" onclick="openDrawer('${key}')">
+      <div class="subject-card-top" data-icon="${meta.icon}">
+        ${gradeLabel ? `<div class="subject-card-grade">${gradeLabel}</div>` : ''}
+        <div class="subject-card-name">${meta.label}</div>
+        <div class="subject-card-isbn">${displayTitle}</div>
+      </div>
+      <div class="subject-progress">
+        <div class="subject-progress-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="subject-card-body">
+        <div class="subject-counts">
+          <div class="subject-count"><div class="count-num">${inCount}</div><div class="count-lbl">Available</div></div>
+          <div class="subject-count"><div class="count-num out">${out}</div><div class="count-lbl">Out</div></div>
+          <div class="subject-count"><div class="count-num">${total}</div><div class="count-lbl">Total</div></div>
+        </div>
+        <div class="subject-detail-row">
+          <div style="font-size:11px;color:var(--ink-ghost)">${pct}% in classroom</div>
+          <div class="overdue-badge ${overdue > 0 ? 'show' : ''}">⚠ ${overdue} overdue</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════
+// DETAIL DRAWER
+// ════════════════════════════════════════════════════════
+function openDrawer(subjectKey) {
+  activeDrawerSubjectKey = subjectKey;
+  const groups = groupBySubject();
+  const g = groups[subjectKey];
+  if (!g) return;
+  const meta = SUBJECT_META[g.subject] || SUBJECT_META.other;
+  const gradeLabel = g.grade ? (g.grade === 'K' ? 'Kinder' : 'Gr.'+g.grade) : '';
+  document.getElementById('drawer-title').textContent = meta.label + (gradeLabel ? ' — ' + gradeLabel : '') + ' · ' + g.books.length + ' copies';
+  activeDrawerTab = 'out';
+  document.querySelectorAll('.drawer-tab').forEach((t,i) => t.classList.toggle('active', i===0));
+  const drawer = document.getElementById('detail-drawer');
+  drawer.classList.add('open');
+  drawer.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  renderDrawerContent();
+}
+
+function closeDrawer() {
+  document.getElementById('detail-drawer').classList.remove('open');
+  activeDrawerSubjectKey = null;
+}
+
+function switchDrawerTab(tab, el) {
+  activeDrawerTab = tab;
+  document.querySelectorAll('.drawer-tab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderDrawerContent();
+}
+
+function renderDrawerContent() {
+  const groups = groupBySubject();
+  const g = groups[activeDrawerSubjectKey];
+  if (!g) return;
+  const body  = document.getElementById('drawer-body');
+  const today = new Date();
+
+  let books = g.books;
+  if (activeDrawerTab === 'out') books = books.filter(b => b.status === 'out');
+  if (activeDrawerTab === 'in')  books = books.filter(b => b.status === 'in');
+
+  if (!books.length) {
+    body.innerHTML = `<div style="text-align:center;padding:28px;color:var(--ink-ghost);font-size:13px">${activeDrawerTab === 'out' ? 'All copies are in the classroom ✓' : 'No copies available right now.'}</div>`;
+    return;
+  }
+
+  body.innerHTML = books.map(b => {
+    const days  = b.checkedOutDate ? Math.floor((today - new Date(b.checkedOutDate))/86400000) : 0;
+    const late  = days > 14;
+    return `<div class="copy-row">
+      <div class="copy-id">${b.id}</div>
+      ${b.serial ? `<div style="font-family:monospace;font-size:10px;color:var(--ink-ghost);background:var(--paper-warm);padding:1px 6px;border-radius:4px">${b.serial}</div>` : ''}
+      <div class="copy-student">${b.status==='out' ? b.checkedOutTo : '<span style="color:var(--ink-ghost)">Available</span>'}</div>
+      ${b.status==='out' ? `<div class="copy-days ${late?'late':''}">${days}d ${late?'⚠ overdue':''}</div>` : ''}
+      <div>${b.status==='out' ? `<span class="copy-status-out">Out</span>` : `<span class="copy-status-in">In</span>`}</div>
+      ${b.status==='out' ? `<button class="btn btn-xs btn-primary" onclick="quickReturn('${b.id}')">Return</button>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function quickReturn(id) {
+  const b = textbooks.find(t => t.id === id);
+  if (!b) return;
+  b.status='in'; b.checkedOutTo=''; b.checkedOutDate='';
+  saveTB(); renderSubjectCards(); renderDrawerContent();
+  showToast('ok', `✓ Copy ${b.copyNum} returned`);
+}
+
+function groupBySubject() {
+  const groups = {};
+  textbooks.forEach(t => {
+    if (!groups[t.subjectKey]) groups[t.subjectKey] = { books:[], subject:t.subject, grade:t.grade, title:t.title };
+    groups[t.subjectKey].books.push(t);
+  });
+  return groups;
+}
+
+// ════════════════════════════════════════════════════════
+// PRINT LABELS
+// ════════════════════════════════════════════════════════
+function printAllLabels() {
+  if (!textbooks.length) { alert('Register some textbooks first.'); return; }
+  const grid = document.getElementById('label-print-grid');
+  const schoolName = prompt('School name for labels (optional):', '') || '';
+  grid.innerHTML = textbooks.map(t => `
+    <div class="label-print-item">
+      <svg class="lp-svg" data-val="${t.id}" style="max-width:100%;height:44px"></svg>
+      <div class="lp-title">${t.title.substring(0,32)}${t.title.length>32?'…':''}</div>
+      <div class="lp-id">${t.id} · ${SUBJECT_META[t.subject]?.label||t.subject} Copy ${t.copyNum}${t.grade?' · Gr.'+t.grade:''}</div>
+      ${schoolName ? `<div class="lp-school">${schoolName}</div>` : ''}
+    </div>`).join('');
+
+  setTimeout(() => {
+    document.querySelectorAll('.lp-svg').forEach(el => {
+      try { JsBarcode(el, el.dataset.val, { format:'CODE128', width:1.5, height:40, displayValue:false, margin:2 }); } catch(e){}
+    });
+    setTimeout(() => window.print(), 300);
+  }, 100);
+}
+
+// ════════════════════════════════════════════════════════
+// EXPORT CSV
+// ════════════════════════════════════════════════════════
+function exportAllCSV() {
+  if (!textbooks.length) return;
+  const rows = [['Asset ID','Subject','Grade','Title','Copy #','Status','Checked Out To','Date Out','Days Out','Registered']];
+  const today = new Date();
+  textbooks.forEach(t => {
+    const days = t.checkedOutDate ? Math.floor((today - new Date(t.checkedOutDate))/86400000) : '';
+    rows.push([ t.id, SUBJECT_META[t.subject]?.label||t.subject, t.grade||'', `"${t.title}"`, t.copyNum, t.status, t.checkedOutTo||'', t.checkedOutDate?.substring(0,10)||'', days, t.registeredAt?.substring(0,10)||'' ]);
+  });
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(rows.map(r=>r.join(',')).join('\n'));
+  a.download = 'dewey-textbooks.csv'; a.click();
+}
+
+// ════════════════════════════════════════════════════════
+// FEEDBACK & TOASTS
+// ════════════════════════════════════════════════════════
+function showFeedback(type, msg) {
+  const el = document.getElementById('tb-feedback');
+  el.className = `scan-feedback show ${type}`;
+  el.textContent = msg;
+}
+function clearFeedback() {
+  const el = document.getElementById('tb-feedback');
+  el.className = 'scan-feedback';
+}
+
+function showToast(type, msg) {
+  const el = document.getElementById(type === 'ok' ? 'tb-toast-ok' : 'tb-toast-err');
+  const orig = el.textContent;
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => { el.classList.remove('show'); el.textContent = orig; }, 3000);
+}
+
+// ════════════════════════════════════════════════════════
+// STUDENTS
+// ════════════════════════════════════════════════════════
+function populateStudents() {
+  const sel = document.getElementById('tb-student-select');
+  sel.innerHTML = '<option value="">— select student —</option>';
+  students.sort((a,b) => a.num - b.num).forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.username;
+    opt.textContent = `#${s.num} — ${s.username}`;
+    sel.appendChild(opt);
+  });
+}
+
+// ════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════
+updateStats();
+renderSubjectCards();
+populateStudents();
+setMode('checkout', document.querySelector('.scan-mode-pill.checkout'));
+// Auto-focus scan input on load
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('tb-scan-input').focus();
+});
+</script>
+</body>
+</html>

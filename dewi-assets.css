@@ -1,0 +1,360 @@
+/* ============================================================
+   DEWEY ASSETS — Tobacco-brown brand layer
+   Loads AFTER dewi.css. Only overrides what differs.
+   ============================================================ */
+
+:root {
+  --tobacco:       #6B4C2A;
+  --tobacco-mid:   #8A6638;
+  --tobacco-deep:  #4E371F;
+  --tobacco-lt:    #F2E9DC;        /* tinted cream for soft chips */
+  --tobacco-glow:  rgba(107, 76, 42, 0.12);
+  --tobacco-soft:  rgba(107, 76, 42, 0.06);
+
+  /* Health colours for device age / AUE */
+  --health-good:   #2C5F35;
+  --health-good-lt:#E5EFE6;
+  --health-warn:   #8B6914;
+  --health-warn-lt:#F7EFD9;
+  --health-bad:    #8A2F2F;
+  --health-bad-lt: #F5E2E2;
+}
+
+/* ── Sidebar: keep forest dark background, but ACTIVE indicator goes tobacco ── */
+.nav-item.active .nav-dot {
+  background: var(--tobacco-mid) !important;          /* visible on dark sidebar */
+  box-shadow: 0 0 0 2px rgba(138, 102, 56, 0.32) !important;
+}
+.nav-item.active::before {
+  background: var(--tobacco-mid) !important;          /* left edge tick */
+}
+
+/* Optional: tint the whole sidebar a touch warmer for Assets context.
+   Keeping default forest for now — DNA continuity. */
+
+/* ── Buttons ── */
+.btn-tobacco {
+  background: var(--tobacco);
+  color: var(--paper);
+  box-shadow: 0 3px 14px var(--tobacco-glow);
+}
+.btn-tobacco:hover {
+  background: var(--tobacco-mid);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(107,76,42,0.24);
+}
+.btn-tobacco:active { transform: translateY(0); }
+
+.btn-tobacco-ghost {
+  background: transparent;
+  color: var(--tobacco);
+  border: 1.5px solid var(--tobacco);
+}
+.btn-tobacco-ghost:hover { background: var(--tobacco-lt); }
+
+/* ── Pills ── */
+.pill-tobacco { background: var(--tobacco-lt); color: var(--tobacco); }
+
+/* ── Inputs: tobacco focus ring for Assets pages ── */
+.input-tobacco:focus,
+.input-pill.tobacco:focus {
+  border-color: var(--tobacco) !important;
+  box-shadow: 0 0 0 3px var(--tobacco-glow) !important;
+}
+
+/* ── Filter chips: tobacco active state ── */
+.filter-chip.active.tobacco,
+.filter-chip-tobacco.active {
+  background: var(--tobacco);
+  color: var(--paper);
+  border-color: var(--tobacco);
+}
+
+/* ── Phase / section eyebrow tinted tobacco ── */
+.eyebrow-tobacco {
+  font-family: 'Jost', sans-serif;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--tobacco);
+}
+
+/* ── Assets wordmark ── */
+.assets-wordmark {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: -0.5px;
+  line-height: 1;
+  color: var(--ink);
+}
+.assets-wordmark .amp {
+  color: var(--tobacco);
+}
+.assets-wordmark-sub {
+  font-family: 'Jost', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--ink-ghost);
+  margin-top: 6px;
+}
+
+/* ── Health badges for device age / AUE ── */
+.health-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.health-badge::before {
+  content: '';
+  width: 6px; height: 6px; border-radius: 50%;
+  flex-shrink: 0;
+}
+.health-good { background: var(--health-good-lt); color: var(--health-good); }
+.health-good::before { background: var(--health-good); }
+.health-warn { background: var(--health-warn-lt); color: var(--health-warn); }
+.health-warn::before { background: var(--health-warn); }
+.health-bad  { background: var(--health-bad-lt);  color: var(--health-bad); }
+.health-bad::before  { background: var(--health-bad); }
+
+/* ── Section heading with tobacco eyebrow rule ── */
+.assets-page-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 24px; flex-wrap: wrap; margin-bottom: 28px;
+}
+.assets-page-head h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 36px; font-weight: 600; color: var(--ink);
+  letter-spacing: -0.4px; line-height: 1.1;
+}
+.assets-page-head h1 em { font-style: italic; color: var(--tobacco); }
+.assets-page-head .sub {
+  font-size: 13px; color: var(--ink-soft); margin-top: 4px;
+  max-width: 560px; line-height: 1.6;
+}
+.assets-eyebrow {
+  font-family: 'Jost', sans-serif;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--tobacco);
+  margin-bottom: 12px;
+  display: inline-flex; align-items: center; gap: 10px;
+}
+.assets-eyebrow::before {
+  content: ''; width: 24px; height: 1.5px; background: var(--tobacco);
+}
+
+/* ── Override photo-hero accent eyebrow to tobacco-on-dark ── */
+.photo-hero-eyebrow.tobacco { color: #D4A76A; }
+
+/* ── Quick-scan centrepiece (used on dashboard + scan page) ── */
+.scan-cent {
+  background: var(--cream);
+  border: 1.5px solid var(--paper-deep);
+  border-radius: var(--r-card);
+  padding: 28px 32px;
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+}
+.scan-cent::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 4px; background: var(--tobacco);
+}
+.scan-cent-label {
+  font-family: 'Jost', sans-serif;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--tobacco); margin-bottom: 10px;
+}
+.scan-cent h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 26px; font-weight: 600; color: var(--ink);
+  line-height: 1.2; margin-bottom: 18px; letter-spacing: -0.3px;
+}
+.scan-cent h2 em { font-style: italic; color: var(--tobacco); }
+.scan-cent-row {
+  display: flex; gap: 10px; align-items: stretch;
+  flex-wrap: wrap;
+}
+.scan-cent-input {
+  flex: 1; min-width: 240px;
+  background: var(--paper);
+  border: 1.5px solid var(--paper-deep);
+  border-radius: var(--r-pill);
+  padding: 14px 24px;
+  font-family: 'Jost', sans-serif;
+  font-size: 16px; font-weight: 500;
+  color: var(--ink); outline: none;
+  letter-spacing: 0.04em;
+  transition: all 0.2s;
+}
+.scan-cent-input:focus {
+  border-color: var(--tobacco);
+  box-shadow: 0 0 0 4px var(--tobacco-glow);
+  background: var(--cream);
+}
+.scan-cent-input::placeholder { color: var(--ink-ghost); letter-spacing: 0.02em; }
+.scan-cent-btn {
+  background: var(--tobacco);
+  color: var(--paper);
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 14px 28px;
+  font-family: 'Jost', sans-serif;
+  font-size: 14px; font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 16px var(--tobacco-glow);
+  white-space: nowrap;
+}
+.scan-cent-btn:hover {
+  background: var(--tobacco-mid);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(107,76,42,0.26);
+}
+.scan-cent-hint {
+  font-size: 12px; color: var(--ink-ghost);
+  margin-top: 12px; display: flex; align-items: center; gap: 6px;
+}
+.scan-cent-hint::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--tobacco); opacity: 0.5;
+}
+
+/* ── Stat blocks: Cormorant numerals, small-caps Jost labels ── */
+.stat-rail {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1px;
+  background: var(--paper-deep);
+  border: 1px solid var(--paper-deep);
+  border-radius: var(--r-card);
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+.stat-rail-cell {
+  background: var(--cream);
+  padding: 22px 24px;
+}
+.stat-rail-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 40px; font-weight: 700;
+  color: var(--ink); line-height: 1; letter-spacing: -0.5px;
+  margin-bottom: 4px;
+}
+.stat-rail-num em { font-style: italic; color: var(--tobacco); }
+.stat-rail-num.tobacco { color: var(--tobacco); }
+.stat-rail-num.warn { color: var(--health-warn); }
+.stat-rail-num.bad  { color: var(--health-bad); }
+.stat-rail-lbl {
+  font-family: 'Jost', sans-serif;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--ink-ghost);
+}
+
+/* ── Cart card (used on dashboard) ── */
+.cart-card {
+  background: var(--cream);
+  border: 1px solid var(--paper-deep);
+  border-radius: var(--r-card);
+  padding: 22px 24px;
+  display: flex; flex-direction: column; gap: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+}
+.cart-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--tobacco);
+}
+.cart-card-top {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+}
+.cart-card-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 32px; font-weight: 700;
+  color: var(--tobacco); line-height: 1;
+}
+.cart-card-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 17px; font-weight: 600;
+  color: var(--ink); line-height: 1.2;
+  margin-top: 6px;
+}
+.cart-card-meta {
+  font-size: 12px; color: var(--ink-soft);
+  margin-top: 2px;
+}
+.cart-card-health {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--health-good);
+  box-shadow: 0 0 0 3px var(--health-good-lt);
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+.cart-card-health.warn { background: var(--health-warn); box-shadow: 0 0 0 3px var(--health-warn-lt); }
+.cart-card-health.bad  { background: var(--health-bad);  box-shadow: 0 0 0 3px var(--health-bad-lt); }
+.cart-card-stats {
+  display: flex; gap: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--paper-warm);
+}
+.cart-card-stat {
+  display: flex; flex-direction: column; gap: 2px;
+}
+.cart-card-stat .n {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px; font-weight: 700;
+  color: var(--ink); line-height: 1;
+}
+.cart-card-stat .l {
+  font-size: 9.5px; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink-ghost);
+}
+.cart-card-bar {
+  height: 6px; border-radius: 3px; overflow: hidden;
+  background: var(--paper-warm);
+  display: flex;
+}
+.cart-card-bar span { display: block; height: 100%; }
+.cart-card-bar .good { background: var(--health-good); }
+.cart-card-bar .warn { background: var(--health-warn); }
+.cart-card-bar .bad  { background: var(--health-bad); }
+
+/* ── Unknown-AUE badge (devices with no AUE data in notes) ── */
+.health-unknown { background: var(--paper-warm, #EDE6D6); color: var(--ink-ghost, #9A8F7E); }
+.health-unknown::before { background: var(--ink-ghost, #9A8F7E); }
+
+/* ── Login error banner ── */
+.login-error {
+  display: none;
+  background: var(--health-bad-lt);
+  color: var(--health-bad);
+  border: 1px solid rgba(138,47,47,0.25);
+  border-radius: var(--r-card);
+  padding: 12px 18px;
+  font-family: 'Jost', sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  animation: fadeUp 0.25s ease;
+}
+.login-error.show { display: block; }

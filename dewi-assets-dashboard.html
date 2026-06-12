@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Dewi Assets</title>
+<link rel="stylesheet" href="dewi.css">
+<link rel="stylesheet" href="dewi-assets.css">
+
+<script>
+let db = null;
+function initSupabase() {
+  try {
+    const { createClient } = supabase;
+    db = createClient(
+      'https://ivdkipygpasvowigarfb.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2ZGtpcHlncGFzdm93aWdhcmZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMzA2NzcsImV4cCI6MjA5MjcwNjY3N30.qKN6tCqyyIIVoPAVl1o2_2gtUkfBh2aBWDP_sIDcxgE'
+    );
+  } catch(e) { console.error('Supabase init failed:', e.message); }
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="initSupabase()"></script>
+
+<style>
+/* ═══ Dashboard-specific styles ═══ */
+
+/* Sidebar logo override for Assets */
+.sidebar { background: #2A1F12; box-shadow: 4px 0 32px rgba(42, 31, 18, 0.30); }
+.sidebar-logo { padding: 28px 24px 20px; }
+.assets-logo .word {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px; font-weight: 700; font-style: italic;
+  color: var(--paper); line-height: 1; letter-spacing: -0.5px;
+}
+.assets-logo .word .amp { color: #D4A76A; }
+.assets-logo .sub {
+  font-family: 'Jost', sans-serif;
+  font-size: 9.5px; font-weight: 600;
+  letter-spacing: 0.26em; text-transform: uppercase;
+  color: rgba(245, 239, 228, 0.42);
+  margin-top: 8px;
+}
+.sidebar-school {
+  margin: 16px 14px 0;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+}
+.sidebar-school .lbl {
+  font-size: 9px; font-weight: 600;
+  letter-spacing: 0.20em; text-transform: uppercase;
+  color: rgba(245,239,228,0.4);
+  margin-bottom: 4px;
+}
+.sidebar-school .name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 16px; font-weight: 600;
+  color: var(--paper); line-height: 1.2;
+}
+.sidebar-school .role {
+  font-size: 11px; color: rgba(245,239,228,0.55);
+  margin-top: 2px;
+}
+
+/* Tobacco active in this sidebar */
+.sidebar .nav-item.active {
+  background: rgba(212, 167, 106, 0.12);
+  color: var(--paper);
+}
+.sidebar .nav-item.active .nav-dot {
+  background: #D4A76A !important;
+  box-shadow: 0 0 0 3px rgba(212, 167, 106, 0.22) !important;
+}
+.sidebar .nav-item.active::before {
+  background: #D4A76A !important;
+}
+
+/* User footer in sidebar */
+.sidebar-user {
+  margin: 0 14px 16px;
+  padding: 12px 14px;
+  background: rgba(0,0,0,0.18);
+  border-radius: 12px;
+  display: flex; align-items: center; gap: 10px;
+}
+.sidebar-user .avi {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: #D4A76A; color: #2A1F12;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 700; font-size: 14px;
+  flex-shrink: 0;
+}
+.sidebar-user .info { min-width: 0; flex: 1; }
+.sidebar-user .name {
+  font-size: 12px; font-weight: 600; color: var(--paper);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sidebar-user .role {
+  font-size: 10px; color: rgba(245,239,228,0.5);
+  letter-spacing: 0.04em;
+}
+
+/* Reduce the .sidebar-nav last-child margin since we have a user footer */
+.sidebar-nav .nav-item:last-child {
+  margin-top: 0;
+  padding-top: 11px;
+  border-top: none;
+}
+
+/* Dashboard photo hero */
+.dash-hero {
+  position: relative;
+  border-radius: var(--r-card);
+  overflow: hidden;
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-lg);
+  height: 360px;
+}
+.dash-hero-img {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(135deg, #2a1f12 0%, #1a130a 100%),
+    repeating-linear-gradient(45deg,
+      transparent 0, transparent 14px,
+      rgba(212,167,106,0.025) 14px, rgba(212,167,106,0.025) 28px);
+  background-blend-mode: overlay;
+}
+.dash-hero-img img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center 45%;
+}
+.dash-hero-img::after {
+  content: 'Photo · chromebook-cart.png';
+  position: absolute;
+  bottom: 92px; right: 24px;
+  font-family: 'Jost', sans-serif;
+  font-size: 9px; font-weight: 600;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: rgba(212, 167, 106, 0.40);
+  border: 1px dashed rgba(212, 167, 106, 0.22);
+  border-radius: var(--r-pill);
+  padding: 5px 14px;
+}
+
+.dash-hero-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg,
+    rgba(15,10,5,0.20) 0%,
+    rgba(15,10,5,0.50) 60%,
+    rgba(15,10,5,0.85) 100%);
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 36px 44px 0;
+  z-index: 2;
+}
+.dash-hero-top { max-width: 540px; }
+.dash-hero-eyebrow {
+  font-family: 'Jost', sans-serif;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.24em; text-transform: uppercase;
+  color: #D4A76A;
+  margin-bottom: 12px;
+  display: inline-flex; align-items: center; gap: 10px;
+}
+.dash-hero-eyebrow::before {
+  content: ''; width: 22px; height: 1.5px; background: #D4A76A;
+}
+.dash-hero-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 38px; font-weight: 600;
+  font-style: italic;
+  color: var(--paper);
+  line-height: 1.1; letter-spacing: -0.6px;
+  margin-bottom: 10px;
+}
+.dash-hero-sub {
+  font-size: 14px;
+  color: rgba(245,239,228,0.7);
+  line-height: 1.6; max-width: 480px;
+}
+
+/* Stats bar at bottom of hero */
+.dash-hero-stats {
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding: 20px 44px;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 24px;
+}
+.dh-stat-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px; font-weight: 700;
+  color: var(--paper); line-height: 1;
+  letter-spacing: -0.5px;
+}
+.dh-stat-num em { font-style: italic; color: #D4A76A; }
+.dh-stat-num.warn { color: #E0B07A; }
+.dh-stat-num.bad  { color: #E89090; }
+.dh-stat-lbl {
+  font-size: 9.5px; font-weight: 600;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: rgba(245,239,228,0.5);
+  margin-top: 6px;
+}
+.dh-stat-lbl .sep {
+  display: block; height: 1px; width: 14px;
+  background: rgba(212,167,106,0.4);
+  margin-top: 6px;
+}
+
+/* ═══ Two-column main layout below hero ═══ */
+.dash-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
+}
+
+/* Carts section */
+.carts-section-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 16px; gap: 16px; flex-wrap: wrap;
+}
+.carts-section-head h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 24px; font-weight: 600; color: var(--ink);
+  letter-spacing: -0.3px;
+}
+.carts-section-head h2 em { font-style: italic; color: var(--tobacco); }
+.carts-section-head .meta {
+  font-size: 12px; color: var(--ink-soft);
+  margin-top: 2px;
+}
+.carts-section-tools {
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.cart-filter-pill {
+  padding: 6px 14px;
+  border-radius: var(--r-pill);
+  font-family: 'Jost', sans-serif;
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  border: 1.5px solid var(--paper-deep);
+  background: var(--cream);
+  color: var(--ink-soft);
+  transition: all 0.15s;
+}
+.cart-filter-pill:hover { background: var(--paper-warm); }
+.cart-filter-pill.active {
+  background: var(--tobacco); color: var(--paper); border-color: var(--tobacco);
+}
+
+.carts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  margin-bottom: 36px;
+}
+
+/* Age distribution strip */
+.age-strip {
+  background: var(--cream);
+  border: 1px solid var(--paper-deep);
+  border-radius: var(--r-card);
+  padding: 22px 26px;
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-sm);
+}
+.age-strip-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 18px; gap: 12px; flex-wrap: wrap;
+}
+.age-strip-head h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 19px; font-weight: 600; color: var(--ink);
+}
+.age-strip-head .sub {
+  font-size: 12px; color: var(--ink-soft);
+}
+.age-strip-bar {
+  height: 14px; border-radius: var(--r-pill); overflow: hidden;
+  background: var(--paper-warm);
+  border: 1px solid var(--paper-deep);
+  display: flex;
+  margin-bottom: 16px;
+}
+.age-strip-bar > span {
+  height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Jost', sans-serif;
+  font-size: 10px; font-weight: 600;
+  color: var(--paper);
+  letter-spacing: 0.04em;
+}
+.age-strip-bar .seg-good { background: var(--health-good); }
+.age-strip-bar .seg-warn { background: var(--health-warn); }
+.age-strip-bar .seg-bad  { background: var(--health-bad); }
+.age-strip-legend {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+}
+.age-legend-item {
+  display: flex; flex-direction: column; gap: 2px;
+  padding-left: 14px;
+  border-left: 3px solid var(--paper-deep);
+}
+.age-legend-item.good { border-left-color: var(--health-good); }
+.age-legend-item.warn { border-left-color: var(--health-warn); }
+.age-legend-item.bad  { border-left-color: var(--health-bad); }
+.age-legend-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 26px; font-weight: 700;
+  color: var(--ink); line-height: 1;
+}
+.age-legend-range {
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--ink-mid);
+  margin-top: 4px;
+}
+.age-legend-desc {
+  font-size: 11px; color: var(--ink-soft);
+  margin-top: 2px;
+}
+
+/* Flagged panel (right rail) */
+.flagged-rail {
+  display: flex; flex-direction: column;
+  gap: 18px;
+  position: sticky; top: calc(var(--topbar-h) + 24px);
+  align-self: flex-start;
+}
+.flagged-panel {
+  background: var(--cream);
+  border: 1px solid var(--paper-deep);
+  border-radius: var(--r-card);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.flagged-panel-head {
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--paper-warm);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.flagged-panel-head h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px; font-weight: 600; color: var(--ink);
+}
+.flagged-panel-head .count {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic; font-size: 22px; font-weight: 700;
+  color: var(--health-bad); line-height: 1;
+}
+.flagged-list { display: flex; flex-direction: column; }
+.flagged-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 22px;
+  border-bottom: 1px solid var(--paper-warm);
+  transition: background 0.15s;
+  cursor: pointer;
+}
+.flagged-item:last-child { border-bottom: none; }
+.flagged-item:hover { background: var(--paper); }
+.flagged-item .ico {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: var(--health-bad-lt);
+  color: var(--health-bad);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic; font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.flagged-item .ico.warn { background: var(--health-warn-lt); color: var(--health-warn); }
+.flagged-item .body { flex: 1; min-width: 0; }
+.flagged-item .serial {
+  font-family: 'Jost', sans-serif;
+  font-size: 12px; font-weight: 600;
+  color: var(--ink); letter-spacing: 0.04em;
+}
+.flagged-item .meta {
+  font-size: 11px; color: var(--ink-soft);
+  margin-top: 2px;
+}
+.flagged-item .reason {
+  font-size: 10.5px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--health-bad);
+}
+.flagged-item .reason.warn { color: var(--health-warn); }
+.flagged-panel-foot {
+  padding: 12px 22px;
+  background: var(--paper);
+  border-top: 1px solid var(--paper-warm);
+  text-align: center;
+}
+.flagged-panel-foot a {
+  font-family: 'Jost', sans-serif;
+  font-size: 12px; font-weight: 600;
+  color: var(--tobacco);
+  letter-spacing: 0.04em;
+}
+.flagged-panel-foot a:hover { text-decoration: underline; }
+
+/* Mini health card */
+.health-mini {
+  background: var(--cream);
+  border: 1px solid var(--paper-deep);
+  border-radius: var(--r-card);
+  padding: 20px 22px;
+  box-shadow: var(--shadow-sm);
+}
+.health-mini h4 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 16px; font-weight: 600; color: var(--ink);
+  margin-bottom: 14px;
+}
+.health-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--paper-warm);
+  font-size: 12px;
+}
+.health-row:last-child { border-bottom: none; }
+.health-row .lbl { color: var(--ink-mid); }
+.health-row .val {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 17px; font-weight: 600;
+  color: var(--ink); letter-spacing: -0.2px;
+}
+.health-row .val.good { color: var(--health-good); }
+.health-row .val.bad  { color: var(--health-bad); }
+
+/* Mobile */
+@media (max-width: 1024px) {
+  .dash-hero-stats { grid-template-columns: repeat(3, 1fr); }
+  .dash-grid { grid-template-columns: 1fr; }
+  .flagged-rail { position: static; }
+}
+@media (max-width: 640px) {
+  .dash-hero { height: auto; }
+  .dash-hero-img { position: relative; height: 200px; }
+  .dash-hero-img::after { display: none; }
+  .dash-hero-overlay { position: relative; padding: 24px 22px 0; }
+  .dash-hero-stats { padding: 16px 20px; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+  .dash-hero-title { font-size: 26px; }
+  .carts-grid { grid-template-columns: 1fr; }
+  .age-strip-legend { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═════════ Sidebar ═════════ -->
+<aside class="sidebar">
+  <a href="dewi-assets-dashboard.html" class="sidebar-logo assets-logo" style="text-decoration:none">
+    <div class="word">Dewi<span class="amp"> Assets</span></div>
+    <div class="sub">Administration</div>
+  </a>
+
+  <div class="sidebar-school">
+    <div class="lbl">Signed in to</div>
+    <div class="name" id="sb-school">—</div>
+    <div class="role" id="sb-school-sub">School Admin</div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a class="nav-item active" href="dewi-assets-dashboard.html" style="text-decoration:none"><div class="nav-dot"></div>Dashboard</a>
+    <a class="nav-item" href="#carts" style="text-decoration:none"><div class="nav-dot"></div>Carts<span class="nav-badge badge-paper" id="nav-cart-count">0</span></a>
+    <a class="nav-item" href="dewi-assets-scan.html" style="text-decoration:none"><div class="nav-dot"></div>Devices</a>
+    <a class="nav-item" href="dewi-assets-reports.html" style="text-decoration:none"><div class="nav-dot"></div>Reports</a>
+    <a class="nav-item" href="dewi-assets-settings.html" style="text-decoration:none"><div class="nav-dot"></div>Settings</a>
+  </nav>
+
+  <div class="sidebar-user">
+    <div class="avi" id="sb-avi">·</div>
+    <div class="info">
+      <div class="name" id="sb-user">—</div>
+      <div class="role" id="sb-role">School Admin</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ═════════ Main ═════════ -->
+<main class="main">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" style="font-style:italic;" id="tb-greet">Good morning.</div>
+      <div style="font-family:'Jost',sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-ghost);margin-top:2px" id="tb-date"></div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-stat">All devices synced <strong style="color:var(--tobacco);" id="tb-sync">just now</strong></div>
+      <button class="btn btn-secondary btn-sm">Export</button>
+      <button class="btn btn-tobacco btn-sm" style="background:var(--tobacco);color:var(--paper);border-radius:var(--r-pill);padding:7px 16px;border:none;cursor:pointer;font-family:'Jost',sans-serif;font-size:12px;font-weight:500;">+ Add cart</button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- ═══ PHOTO HERO with stats bar ═══ -->
+    <section class="dash-hero">
+      <div class="dash-hero-img">
+        <!-- PHOTO: Neat row of Chromebooks charging in a school cart, warm lighting, shallow depth of field, chrome and plastic surfaces catching light, clean and organized, horizontal format -->
+        <img src="images/chromebook-cart.png" alt="Chromebook cart" onerror="this.style.display='none'">
+      </div>
+      <div class="dash-hero-overlay">
+        <div class="dash-hero-top">
+          <div class="dash-hero-eyebrow">School Inventory · Live</div>
+          <h1 class="dash-hero-title">Every device, accounted for.</h1>
+          <p class="dash-hero-sub" id="hero-sub">A live picture of every Chromebook, iPad, and shared device in your school.</p>
+        </div>
+
+        <div class="dash-hero-stats">
+          <div>
+            <div class="dh-stat-num" id="hs-total">—</div>
+            <div class="dh-stat-lbl">Total devices</div>
+          </div>
+          <div>
+            <div class="dh-stat-num" id="hs-cb">—</div>
+            <div class="dh-stat-lbl">Chromebooks</div>
+          </div>
+          <div>
+            <div class="dh-stat-num" id="hs-ipad">—</div>
+            <div class="dh-stat-lbl">iPads</div>
+          </div>
+          <div>
+            <div class="dh-stat-num" id="hs-assigned">—</div>
+            <div class="dh-stat-lbl">Assigned</div>
+          </div>
+          <div>
+            <div class="dh-stat-num warn" id="hs-unassigned">—</div>
+            <div class="dh-stat-lbl">Unassigned</div>
+          </div>
+          <div>
+            <div class="dh-stat-num bad" id="hs-flagged">—</div>
+            <div class="dh-stat-lbl">Flagged · replace</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ QUICK SCAN — centrepiece ═══ -->
+    <section class="scan-cent" style="margin-bottom: 32px;">
+      <div class="scan-cent-label">The most-used tool in Dewi Assets</div>
+      <h2>Scan any serial number to <em>find a device instantly.</em></h2>
+      <form class="scan-cent-row" onsubmit="event.preventDefault();handleScan();">
+        <input class="scan-cent-input" id="quick-serial" type="text" placeholder="Type or scan a serial number — e.g. 5CD3147XYZ" autofocus>
+        <button class="scan-cent-btn" type="submit">
+          Find device <span style="font-size:18px;line-height:1;">→</span>
+        </button>
+      </form>
+      <div class="scan-cent-hint">USB scanner connected · or paste from the device label</div>
+    </section>
+
+    <!-- ═══ Two-column grid: carts + flagged rail ═══ -->
+    <div class="dash-grid">
+
+      <!-- Left: carts -->
+      <div>
+        <div class="carts-section-head" id="carts">
+          <div>
+            <h2 id="carts-head">Your carts</h2>
+            <div class="meta">Tap a cart for the full device list, condition history, and student assignments.</div>
+          </div>
+          <div class="carts-section-tools">
+            <button class="cart-filter-pill active">All</button>
+            <button class="cart-filter-pill">Healthy</button>
+            <button class="cart-filter-pill">Needs attention</button>
+            <button class="cart-filter-pill">By age</button>
+          </div>
+        </div>
+
+        <div class="carts-grid" id="carts-grid"></div>
+
+        <!-- ═══ Age distribution ═══ -->
+        <section class="age-strip">
+          <div class="age-strip-head">
+            <div>
+              <h3>Age distribution · the fleet ages with you</h3>
+              <div class="sub">Plan replacements before Auto Update Expiry hits. Tobacco devices on the right are next.</div>
+            </div>
+            <a style="font-family:'Jost',sans-serif;font-size:12px;font-weight:600;color:var(--tobacco);letter-spacing:0.04em;" href="dewi-assets-reports.html">Open reports →</a>
+          </div>
+          <div class="age-strip-bar" id="age-bar"></div>
+          <div class="age-strip-legend">
+            <div class="age-legend-item good">
+              <div class="age-legend-num" id="age-new-n">0</div>
+              <div class="age-legend-range">0–2 years · new</div>
+              <div class="age-legend-desc" id="age-new-d">AUE well in the future.</div>
+            </div>
+            <div class="age-legend-item warn">
+              <div class="age-legend-num" id="age-mid-n">0</div>
+              <div class="age-legend-range">3–4 years · mid-life</div>
+              <div class="age-legend-desc" id="age-mid-d">Plan ahead for these.</div>
+            </div>
+            <div class="age-legend-item bad">
+              <div class="age-legend-num" id="age-old-n">0</div>
+              <div class="age-legend-range">5+ years · plan replacement</div>
+              <div class="age-legend-desc" id="age-old-d">AUE this year or already passed.</div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Right rail: flagged + health -->
+      <aside class="flagged-rail">
+
+        <div class="flagged-panel">
+          <div class="flagged-panel-head">
+            <h3>Flagged devices</h3>
+            <div class="count" id="flag-count">0</div>
+          </div>
+          <div class="flagged-list" id="flagged-list"></div>
+          <div class="flagged-panel-foot" id="flag-foot" style="display:none;">
+            <a href="dewi-assets-reports.html" id="flag-foot-link">View all flagged →</a>
+          </div>
+        </div>
+
+        <div class="health-mini">
+          <h4 style="font-style:italic;">School at a glance</h4>
+          <div class="health-row">
+            <span class="lbl">Assignment rate</span>
+            <span class="val good" id="hm-assign">—</span>
+          </div>
+          <div class="health-row">
+            <span class="lbl">Avg device age</span>
+            <span class="val" id="hm-age">—</span>
+          </div>
+          <div class="health-row">
+            <span class="lbl">Devices added this year</span>
+            <span class="val" id="hm-added">—</span>
+          </div>
+          <div class="health-row">
+            <span class="lbl">Carts in school</span>
+            <span class="val" id="hm-carts">—</span>
+          </div>
+          <div class="health-row">
+            <span class="lbl">AUE expired</span>
+            <span class="val bad" id="hm-expired">—</span>
+          </div>
+        </div>
+
+      </aside>
+
+    </div>
+
+  </div>
+</main>
+
+<script src="dewi-assets-core.js"></script>
+<script>
+const C = AssetsCore;
+let INV = null;          // loaded inventory
+let CART_VIEWS = [];     // computed per-cart stats for filtering
+
+function handleScan() {
+  const v = (document.getElementById('quick-serial').value || '').trim();
+  window.location.href = 'dewi-assets-scan.html' + (v ? '?serial=' + encodeURIComponent(v) : '');
+}
+
+function greeting(name) {
+  const h = new Date().getHours();
+  const part = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  const first = (name || '').trim().split(' ')[0];
+  return part + (first ? ', ' + first + '.' : '.');
+}
+
+function numberWord(n) {
+  const words = ['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'];
+  return n <= 12 ? words[n] : String(n);
+}
+
+function cartView(entry) {
+  const cart = entry.cart, assets = entry.assets, students = entry.students;
+  const assignedSlots = new Set(students.map(s => s.slot_number));
+  const assigned = assets.filter(a => a.slot_number != null && assignedSlots.has(a.slot_number)).length;
+  const flagged = assets.filter(a => C.isFlagged(a)).length;
+  let good = 0, warn = 0, bad = 0;
+  assets.forEach(a => {
+    const st = C.aueStatus(C.noteObj(a).aue);
+    if (st.cls === 'health-bad') bad++;
+    else if (st.cls === 'health-warn') warn++;
+    else good++;
+  });
+  const ages = assets.map(a => C.deviceAgeYears(a)).filter(v => v != null);
+  const avgAge = ages.length ? ages.reduce((x,y)=>x+y,0)/ages.length : 0;
+  const health = flagged > 0 || bad > 0 ? (bad >= 3 || flagged >= 3 ? 'bad' : 'warn') : 'good';
+  return { cart, assets, students, assigned, flagged, good, warn, bad, avgAge, health };
+}
+
+function renderCarts(views) {
+  const grid = document.getElementById('carts-grid');
+  if (!views.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;padding:40px 24px;text-align:center;font-family:\'Jost\',sans-serif;font-size:13px;color:var(--ink-soft);background:var(--cream);border:1px dashed var(--paper-deep);border-radius:var(--r-card);">No carts yet for this school. Carts appear here automatically as teachers scan devices in the Dewi teacher app.</div>';
+    return;
+  }
+  grid.innerHTML = views.map(v => {
+    const total = Math.max(1, v.assets.length);
+    const pg = Math.round(v.good/total*100), pw = Math.round(v.warn/total*100);
+    const pb = Math.max(0, 100 - pg - pw);
+    const num = String(v.cart.cart_number || '·').padStart(2,'0');
+    return `
+      <a class="cart-card" href="dewi-assets-cart.html?id=${encodeURIComponent(v.cart.id)}">
+        <div class="cart-card-top">
+          <div>
+            <div class="cart-card-num">${C.esc(num)}</div>
+            <div class="cart-card-name">${C.esc(v.cart.cart_name || ('Cart ' + num))}</div>
+            <div class="cart-card-meta">${C.esc([v.cart.room_number ? 'Room ' + v.cart.room_number : null, v.cart.shared_classes ? 'Shared by ' + v.cart.shared_classes : null].filter(Boolean).join(' · ') || v.cart.school || '')}</div>
+          </div>
+          <div class="cart-card-health ${v.health === 'good' ? '' : v.health}" title="${v.flagged ? v.flagged + ' flagged' : 'All healthy'}"></div>
+        </div>
+        <div class="cart-card-bar">
+          <span class="good" style="width:${pg}%"></span>
+          <span class="warn" style="width:${pw}%"></span>
+          <span class="bad" style="width:${pb}%"></span>
+        </div>
+        <div class="cart-card-stats">
+          <div class="cart-card-stat"><div class="n">${v.assets.length}</div><div class="l">Devices</div></div>
+          <div class="cart-card-stat"><div class="n">${v.assigned}</div><div class="l">Assigned</div></div>
+          <div class="cart-card-stat"><div class="n"${v.flagged ? ' style="color:var(--health-warn);"' : ''}>${v.flagged}</div><div class="l">Flagged</div></div>
+        </div>
+      </a>`;
+  }).join('');
+}
+
+function applyFilter(label) {
+  let views = CART_VIEWS.slice();
+  if (label === 'Healthy') views = views.filter(v => v.health === 'good');
+  if (label === 'Needs attention') views = views.filter(v => v.health !== 'good');
+  if (label === 'By age') views.sort((a,b) => b.avgAge - a.avgAge);
+  renderCarts(views);
+}
+
+function render(ctx, inv) {
+  const p = ctx.profile;
+  const assets = inv.assets, students = inv.students, carts = inv.carts;
+
+  // Sidebar + topbar
+  document.getElementById('sb-school').textContent = p.school || '—';
+  document.getElementById('sb-school-sub').textContent = p.board || 'School Admin';
+  const name = p.full_name || p.email;
+  document.getElementById('sb-user').textContent = name;
+  document.getElementById('sb-avi').textContent = (name || '·').charAt(0).toUpperCase();
+  document.getElementById('tb-greet').textContent = greeting(p.full_name);
+  document.getElementById('tb-date').textContent = new Date().toLocaleDateString('en-CA', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  document.getElementById('nav-cart-count').textContent = carts.length;
+  document.getElementById('hero-sub').textContent =
+    'A live picture of every Chromebook, iPad, and shared device across ' +
+    (carts.length === 1 ? 'your cart' : 'all ' + numberWord(carts.length) + ' carts') +
+    (p.school ? ' at ' + p.school + '.' : '.');
+  document.getElementById('carts-head').innerHTML = 'Your <em>' + C.esc(numberWord(carts.length)) + '</em> ' + (carts.length === 1 ? 'cart' : 'carts');
+
+  // Hero stats
+  const types = assets.map(a => C.detectDeviceType(a.model));
+  const assignedSet = {};
+  students.forEach(s => { assignedSet[s.cart_id + ':' + s.slot_number] = true; });
+  const assigned = assets.filter(a => a.slot_number != null && assignedSet[a.cart_id + ':' + a.slot_number]).length;
+  const flaggedAssets = assets.filter(a => C.isFlagged(a));
+  document.getElementById('hs-total').textContent = assets.length;
+  document.getElementById('hs-cb').textContent = types.filter(t => t === 'Chromebook').length;
+  document.getElementById('hs-ipad').textContent = types.filter(t => t === 'iPad').length;
+  document.getElementById('hs-assigned').textContent = assigned;
+  document.getElementById('hs-unassigned').textContent = assets.length - assigned;
+  document.getElementById('hs-flagged').textContent = flaggedAssets.length;
+
+  // Carts grid
+  CART_VIEWS = carts.map(c => cartView(inv.byCart[c.id]));
+  renderCarts(CART_VIEWS);
+
+  // Age distribution
+  const now = new Date().getFullYear();
+  let nNew = 0, nMid = 0, nOld = 0;
+  assets.forEach(a => {
+    const age = a.purchase_year ? now - a.purchase_year : null;
+    if (age == null || age <= 2) nNew++;
+    else if (age <= 4) nMid++;
+    else nOld++;
+  });
+  const tot = Math.max(1, assets.length);
+  const pNew = Math.round(nNew/tot*100), pMid = Math.round(nMid/tot*100);
+  const pOld = Math.max(0, 100 - pNew - pMid);
+  document.getElementById('age-bar').innerHTML =
+    (pNew ? `<span class="seg-good" style="width:${pNew}%;">${pNew}%</span>` : '') +
+    (pMid ? `<span class="seg-warn" style="width:${pMid}%;">${pMid}%</span>` : '') +
+    (pOld ? `<span class="seg-bad" style="width:${pOld}%;">${pOld}%</span>` : '');
+  document.getElementById('age-new-n').textContent = nNew;
+  document.getElementById('age-mid-n').textContent = nMid;
+  document.getElementById('age-old-n').textContent = nOld;
+  document.getElementById('age-new-d').textContent = 'Bought ' + (now-2) + '–' + now + '. AUE well in the future.';
+  document.getElementById('age-mid-d').textContent = 'Bought ' + (now-4) + '–' + (now-3) + '. Plan ahead.';
+  document.getElementById('age-old-d').textContent = 'Bought ' + (now-5) + ' or earlier. AUE near or passed.';
+
+  // Flagged rail
+  document.getElementById('flag-count').textContent = flaggedAssets.length;
+  const list = document.getElementById('flagged-list');
+  if (!flaggedAssets.length) {
+    list.innerHTML = '<div style="padding:18px 4px;font-size:12.5px;color:var(--ink-soft);">Nothing flagged right now — the fleet is healthy.</div>';
+  } else {
+    const cartsById = {};
+    carts.forEach(c => cartsById[c.id] = c);
+    list.innerHTML = flaggedAssets.slice(0, 6).map(a => {
+      const cart = cartsById[a.cart_id];
+      const st = C.aueStatus(C.noteObj(a).aue);
+      const cond = C.condition(a);
+      const reason = (cond === 'poor' || cond === 'damaged' || cond === 'broken')
+        ? cond.charAt(0).toUpperCase() + cond.slice(1)
+        : (st.months !== null && st.months <= 0 ? 'AUE expired' : 'Flagged');
+      const isWarn = reason === 'Flagged';
+      return `
+        <div class="flagged-item">
+          <div class="ico${isWarn ? ' warn' : ''}">${isWarn ? '?' : '!'}</div>
+          <div class="body">
+            <div class="serial">${C.esc(a.serial_number || '—')}</div>
+            <div class="meta">${C.esc([cart ? 'Cart ' + String(cart.cart_number||'·').padStart(2,'0') : null, a.slot_number != null ? 'slot ' + String(a.slot_number).padStart(2,'0') : null, a.model].filter(Boolean).join(' · '))}</div>
+          </div>
+          <div class="reason${isWarn ? ' warn' : ''}">${C.esc(reason)}</div>
+        </div>`;
+    }).join('');
+    if (flaggedAssets.length > 6) {
+      document.getElementById('flag-foot').style.display = '';
+      document.getElementById('flag-foot-link').textContent = 'View all ' + flaggedAssets.length + ' flagged →';
+    }
+  }
+
+  // Health mini
+  document.getElementById('hm-assign').textContent = assets.length ? (assigned/assets.length*100).toFixed(1) + '%' : '—';
+  const ages = assets.map(a => C.deviceAgeYears(a)).filter(v => v != null);
+  document.getElementById('hm-age').textContent = ages.length ? (ages.reduce((x,y)=>x+y,0)/ages.length).toFixed(1) + ' yr' : '—';
+  const added = assets.filter(a => a.created_at && new Date(a.created_at).getFullYear() === now).length;
+  document.getElementById('hm-added').textContent = '+' + added;
+  document.getElementById('hm-carts').textContent = carts.length;
+  document.getElementById('hm-expired').textContent = assets.filter(a => {
+    const st = C.aueStatus(C.noteObj(a).aue);
+    return st.months !== null && st.months <= 0;
+  }).length;
+}
+
+document.querySelectorAll('.cart-filter-pill').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.cart-filter-pill').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    applyFilter(b.textContent.trim());
+  });
+});
+
+AssetsCore.boot({
+  allow: ['school'],
+  onReady: async function (ctx) {
+    INV = await C.loadInventory(ctx.scope.schools);
+    render(ctx, INV);
+    document.getElementById('tb-sync').textContent = 'just now';
+  }
+});
+</script>
+
+</body>
+</html>

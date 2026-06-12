@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Board Dashboard — Dewi Assets</title>
+<meta name="description" content="District-level device inventory overview for superintendents and board technology coordinators.">
+<link rel="stylesheet" href="dewi.css">
+<link rel="stylesheet" href="dewi-assets.css">
+<link rel="stylesheet" href="dewi-board.css">
+
+<script>
+let db = null;
+function initSupabase() {
+  try {
+    const { createClient } = supabase;
+    db = createClient(
+      'https://ivdkipygpasvowigarfb.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2ZGtpcHlncGFzdm93aWdhcmZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMzA2NzcsImV4cCI6MjA5MjcwNjY3N30.qKN6tCqyyIIVoPAVl1o2_2gtUkfBh2aBWDP_sIDcxgE'
+    );
+  } catch(e) { console.error('Supabase init failed:', e.message); }
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="initSupabase()"></script>
+</head>
+<body>
+
+<!-- ═════════ Sidebar ═════════ -->
+<aside class="sidebar">
+  <a href="dewi-assets-board.html" class="sidebar-logo assets-logo" style="text-decoration:none">
+    <div class="word">Dewi<span class="amp"> Assets</span></div>
+    <div class="sub">Board Administration</div>
+  </a>
+
+  <div class="sidebar-board">
+    <div class="lbl">Board</div>
+    <div class="name" id="sb-board">—</div>
+    <div class="role" id="sb-board-sub">—</div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="sidebar-nav-label">District</div>
+    <a class="nav-item active" href="dewi-assets-board.html" style="text-decoration:none"><div class="nav-dot"></div>Dashboard</a>
+    <a class="nav-item" href="#" style="text-decoration:none"><div class="nav-dot"></div>Schools<span class="nav-badge badge-paper" id="nav-school-count">0</span></a>
+    <a class="nav-item" href="dewi-assets-fleet.html" style="text-decoration:none"><div class="nav-dot"></div>Fleet Health</a>
+    <a class="nav-item" href="dewi-assets-search.html" style="text-decoration:none"><div class="nav-dot"></div>Device Search</a>
+    <a class="nav-item" href="dewi-assets-reports.html" style="text-decoration:none"><div class="nav-dot"></div>Reports</a>
+    <a class="nav-item" href="dewi-assets-settings.html" style="text-decoration:none"><div class="nav-dot"></div>Settings</a>
+  </nav>
+
+  <div class="sidebar-user">
+    <div class="avi" id="sb-avi">·</div>
+    <div class="info">
+      <div class="name" id="sb-user">—</div>
+      <div class="role">Board Admin</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ═════════ Main ═════════ -->
+<main class="main">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" style="font-style:italic;"><span id="tb-greet">Good morning.</span></div>
+      <div style="font-family:'Jost',sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-ghost);margin-top:2px"><span id="tb-date">Board overview</span></div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-stat">All schools synced <strong style="color:var(--tobacco);" id="tb-sync">just now</strong></div>
+      <a class="btn btn-secondary btn-sm" href="dewi-assets-fleet.html" style="text-decoration:none">Fleet health</a>
+      <a class="btn btn-sm" href="dewi-assets-search.html" style="text-decoration:none;background:var(--tobacco);color:var(--paper);border-radius:var(--r-pill);padding:7px 16px;border:none;font-family:'Jost',sans-serif;font-size:12px;font-weight:500;">Find a device</a>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- ═══ BOARD HERO ═══ -->
+    <section class="board-hero">
+      <div class="board-hero-img">
+        <!-- PHOTO: Heritage school hallway, morning light, Welcome Back bulletin board, warm tones -->
+        <img src="images/school-hallway.png" alt="Heritage school hallway in morning light" onerror="this.style.display='none'">
+      </div>
+      <div class="board-hero-overlay">
+        <div class="board-hero-top">
+          <div class="board-hero-eyebrow">Board · Live Inventory</div>
+          <h1 class="board-hero-title">Every device, every school,<br>one clear picture.</h1>
+          <p class="board-hero-sub" id="hero-sub">A live, board-wide view of every device across all your schools.</p>
+        </div>
+
+        <div class="board-hero-stats">
+          <div class="bh-stat">
+            <div class="bh-stat-num" id="bhs-total">—</div>
+            <div class="bh-stat-lbl">Total devices</div>
+          </div>
+          <div class="bh-stat">
+            <div class="bh-stat-num" id="bhs-cb">—</div>
+            <div class="bh-stat-lbl">Chromebooks</div>
+          </div>
+          <div class="bh-stat">
+            <div class="bh-stat-num bad" id="bhs-expiring">—</div>
+            <div class="bh-stat-lbl">Expiring this year</div>
+          </div>
+          <div class="bh-stat">
+            <div class="bh-stat-num" id="bhs-avg-age">—</div>
+            <div class="bh-stat-lbl">Avg fleet age</div>
+          </div>
+          <div class="bh-stat">
+            <div class="bh-stat-num" id="bhs-schools">—</div>
+            <div class="bh-stat-lbl">Schools in board</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ Two-column: schools + AUE alerts ═══ -->
+    <div class="board-grid">
+
+      <!-- Left: school cards -->
+      <div>
+        <div class="board-section-head">
+          <div>
+            <h2 id="schools-head">Your schools</h2>
+            <div class="meta">Open a school for its full dashboard, carts, and device list. Sorted by attention needed.</div>
+          </div>
+          <div class="board-section-tools">
+            <button class="board-filter-pill active" data-filter="all">All</button>
+            <button class="board-filter-pill" data-filter="bad">Needs attention</button>
+            <button class="board-filter-pill" data-filter="good">Healthy</button>
+          </div>
+        </div>
+
+        <div class="school-grid" id="school-grid"></div>
+      </div>
+
+      <!-- Right rail: AUE alerts -->
+      <aside class="aue-rail">
+
+        <div class="aue-panel" id="aue-panel">
+          <div class="aue-panel-head">
+            <div class="eyebrow">Auto Update Expiry</div>
+            <div class="row">
+              <h3>Expiry alert</h3>
+              <div class="count" id="aue-count">0</div>
+            </div>
+            <p class="sub">Devices reaching Auto Update Expiry within 12 months.</p>
+          </div>
+          <div id="aue-items"></div>
+          <div class="aue-panel-foot">
+            <a href="dewi-assets-fleet.html">View the full AUE timeline →</a>
+          </div>
+        </div>
+
+        <!-- Board at a glance -->
+        <div class="glance-card">
+          <h4>Board at a glance</h4>
+          <div class="glance-row">
+            <span class="lbl">Assignment rate</span>
+            <span class="val good" id="gl-assign">—</span>
+          </div>
+          <div class="glance-row">
+            <span class="lbl">Avg device age</span>
+            <span class="val" id="gl-age">—</span>
+          </div>
+          <div class="glance-row">
+            <span class="lbl">Devices added this year</span>
+            <span class="val" id="gl-added">—</span>
+          </div>
+          <div class="glance-row">
+            <span class="lbl">Flagged across board</span>
+            <span class="val warn" id="gl-flagged">—</span>
+          </div>
+          <div class="glance-row">
+            <span class="lbl">Lost / unaccounted</span>
+            <span class="val bad" id="gl-lost">—</span>
+          </div>
+          <div class="glance-row">
+            <span class="lbl">Est. replacement (FY27)</span>
+            <span class="val" id="gl-replace">—</span>
+          </div>
+        </div>
+
+      </aside>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="board-foot">
+      <div class="meta">
+        <span>© 2026 Dewi · Anchored Development Co</span>
+        <span class="sep">·</span>
+        <a href="#">Privacy</a>
+        <span class="sep">·</span>
+        <a href="#">FERPA / PIPEDA</a>
+      </div>
+      <div class="status">All systems operational</div>
+    </footer>
+
+  </div>
+</main>
+
+<!-- Floating scan button -->
+<a class="scan-fab" href="dewi-assets-search.html">
+  <span class="glyph">⌖</span>
+  <span>Find any device<span class="sub">Search across the board</span></span>
+</a>
+
+<script src="dewi-assets-core.js"></script>
+<script>
+const C = AssetsCore;
+
+function greeting(name) {
+  const h = new Date().getHours();
+  const part = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  const first = (name || '').trim().split(' ')[0];
+  return part + (first ? ', ' + first + '.' : '.');
+}
+function numberWord(n) {
+  const words = ['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'];
+  return n <= 12 ? words[n] : String(n);
+}
+
+function schoolHealth(expiring, total) {
+  if (!total) return 'good';
+  const pct = expiring / total * 100;
+  if (pct > 15) return 'bad';
+  if (pct > 5) return 'warn';
+  return 'good';
+}
+function healthLabel(h) {
+  if (h === 'bad') return 'Replace';
+  if (h === 'warn') return 'Watch';
+  return 'Healthy';
+}
+
+async function render(ctx) {
+  const p = ctx.profile, scope = ctx.scope;
+  const boardName = p.board || '—';
+  const schools = scope.boardSchools || [];
+  const schoolNames = scope.schools || [];
+
+  // Sidebar
+  document.getElementById('sb-board').textContent = boardName;
+  document.getElementById('sb-board-sub').textContent = schoolNames.length + ' schools';
+  const name = p.full_name || p.email;
+  document.getElementById('sb-user').textContent = name;
+  document.getElementById('sb-avi').textContent = (name||'·').charAt(0).toUpperCase();
+  document.getElementById('nav-school-count').textContent = schoolNames.length;
+
+  // Topbar
+  document.getElementById('tb-greet').textContent = greeting(p.full_name);
+  document.getElementById('tb-date').textContent =
+    new Date().toLocaleDateString('en-CA', { weekday:'long', day:'numeric', month:'long', year:'numeric' }) + ' · Board overview';
+
+  document.getElementById('hero-sub').textContent =
+    'A live, board-wide view of every device across all ' + numberWord(schoolNames.length) + ' schools.';
+  document.getElementById('schools-head').innerHTML =
+    'Your <em>' + C.esc(numberWord(schoolNames.length)) + '</em> schools';
+
+  // Load inventory
+  const inv = await C.loadInventory(schoolNames);
+  const assets = inv.assets;
+  const students = inv.students;
+  const carts = inv.carts;
+  const now = new Date();
+  const thisYear = now.getFullYear();
+
+  // Per-school aggregation
+  const bySchool = {};
+  schoolNames.forEach(sn => { bySchool[sn] = { carts: [], assets: [], students: [] }; });
+  carts.forEach(c => { if (bySchool[c.school]) bySchool[c.school].carts.push(c); });
+  assets.forEach(a => {
+    const cart = carts.find(c => c.id === a.cart_id);
+    if (cart && bySchool[cart.school]) bySchool[cart.school].assets.push(a);
+  });
+
+  // Hero stats
+  const types = assets.map(a => C.detectDeviceType(a.model));
+  const cbCount = types.filter(t => t === 'Chromebook').length;
+  const expiringThisYear = assets.filter(a => {
+    const y = C.aueYear(a);
+    return y !== null && y <= thisYear;
+  });
+  const ages = assets.map(a => C.deviceAgeYears(a)).filter(v => v != null);
+  const avgAge = ages.length ? (ages.reduce((x,y)=>x+y,0)/ages.length).toFixed(1) : '—';
+  const assignedSet = {};
+  students.forEach(st => { assignedSet[st.cart_id + ':' + st.slot_number] = true; });
+  const assigned = assets.filter(a => a.slot_number != null && assignedSet[a.cart_id + ':' + a.slot_number]).length;
+  const flagged = assets.filter(a => C.isFlagged(a));
+
+  document.getElementById('bhs-total').textContent = assets.length.toLocaleString();
+  document.getElementById('bhs-cb').textContent = cbCount.toLocaleString();
+  document.getElementById('bhs-expiring').textContent = expiringThisYear.length;
+  document.getElementById('bhs-avg-age').innerHTML = avgAge + (avgAge !== '—' ? '<span class="u"> yr</span>' : '');
+  document.getElementById('bhs-schools').innerHTML = '<em>' + schoolNames.length + '</em>';
+
+  // School cards
+  const grid = document.getElementById('school-grid');
+  const schoolCards = schoolNames.map(sn => {
+    const sa = bySchool[sn] || { assets: [] };
+    const total = sa.assets.length;
+    const cb = sa.assets.filter(a => C.detectDeviceType(a.model) === 'Chromebook').length;
+    const exp = sa.assets.filter(a => { const y = C.aueYear(a); return y !== null && y <= thisYear; }).length;
+    const h = schoolHealth(exp, total);
+    const bsRow = schools.find(x => x.school_name === sn);
+    const city = bsRow ? bsRow.city || '' : '';
+    return { name: sn, city, total, cb, exp, health: h };
+  }).sort((a,b) => {
+    const ord = { bad:0, warn:1, good:2 };
+    return (ord[a.health]||2) - (ord[b.health]||2) || b.exp - a.exp;
+  });
+
+  grid.innerHTML = schoolCards.length ? schoolCards.map(sc => `
+    <a class="school-card" href="dewi-assets-school.html?school=${encodeURIComponent(sc.name)}" data-health="${sc.health}">
+      <div class="school-card-top">
+        <div>
+          <div class="school-card-name">${C.esc(sc.name)}</div>
+          <div class="school-card-loc">${C.esc(sc.city)}</div>
+        </div>
+        <span class="school-badge ${sc.health}">${healthLabel(sc.health)}</span>
+      </div>
+      <div class="school-card-stats">
+        <div class="school-card-stat"><div class="n">${sc.total}</div><div class="l">Devices</div></div>
+        <div class="school-card-stat"><div class="n">${sc.cb}</div><div class="l">Chromebooks</div></div>
+        <div class="school-card-stat"><div class="n${sc.exp ? ' ' + sc.health : ''}">${sc.exp}</div><div class="l">Expiring</div></div>
+      </div>
+      <div class="school-card-foot">
+        <span class="open">Open →</span>
+      </div>
+    </a>
+  `).join('') : '<div style="grid-column:1/-1;padding:40px;text-align:center;font-size:13px;color:var(--ink-soft);background:var(--cream);border:1px dashed var(--paper-deep);border-radius:var(--r-card);">No schools configured yet. Add schools in <a href="dewi-assets-settings.html">Settings</a>.</div>';
+
+  // AUE alert rail — show up to 8 expiring/expired assets, grouped by school
+  const aueAlerts = assets.filter(a => {
+    const st = C.aueStatus(C.noteObj(a).aue);
+    return st.months !== null && st.months <= 12;
+  }).sort((a,b) => {
+    const am = C.aueStatus(C.noteObj(a).aue).months;
+    const bm = C.aueStatus(C.noteObj(b).aue).months;
+    return (am||0) - (bm||0);
+  });
+  document.getElementById('aue-count').textContent = aueAlerts.length;
+  const cartsById = {};
+  carts.forEach(c => { cartsById[c.id] = c; });
+  const shown = aueAlerts.slice(0, 8);
+  let lastSchool = '';
+  const items = shown.map(a => {
+    const cart = cartsById[a.cart_id];
+    const school = cart ? cart.school : '—';
+    const n = C.noteObj(a);
+    const st = C.aueStatus(n.aue);
+    const d = n.aue ? new Date(n.aue + '-01') : null;
+    const yr = d ? ("'" + String(d.getFullYear()).slice(2)) : '?';
+    const mo = st.months <= 0 ? 'Expired' : (d ? d.toLocaleDateString('en-CA',{month:'short'}) : '?');
+    const chipCls = st.months <= 0 ? 'bad' : (st.months <= 12 ? 'warn' : 'good');
+    let grp = '';
+    if (school !== lastSchool) {
+      lastSchool = school;
+      const cnt = aueAlerts.filter(x => { const c2 = cartsById[x.cart_id]; return c2 && c2.school === school; }).length;
+      grp = '<div class="aue-group-label">' + C.esc(school) + ' <span class="ct">' + cnt + ' devices</span></div>';
+    }
+    return grp + `
+      <div class="aue-item">
+        <div class="aue-chip ${chipCls}"><span class="yr">${yr}</span><span class="mo">${mo}</span></div>
+        <div class="aue-item-body">
+          <div class="aue-item-model">${C.esc(a.model || '—')}</div>
+          <div class="aue-item-meta"><span class="serial">${C.esc(a.serial_number||'—')}</span>${cart ? ' · Cart ' + String(cart.cart_number||'').padStart(2,'0') : ''}${a.slot_number!=null ? ' · slot ' + String(a.slot_number).padStart(2,'0') : ''}</div>
+        </div>
+      </div>`;
+  }).join('');
+  document.getElementById('aue-items').innerHTML = items || '<div style="padding:14px 4px;font-size:12px;color:var(--ink-soft);">No AUE alerts right now.</div>';
+
+  // Glance card
+  document.getElementById('gl-assign').textContent = assets.length ? (assigned/assets.length*100).toFixed(1) + '%' : '—';
+  document.getElementById('gl-age').textContent = avgAge !== '—' ? avgAge + ' yr' : '—';
+  const added = assets.filter(a => a.created_at && new Date(a.created_at).getFullYear() === thisYear).length;
+  document.getElementById('gl-added').textContent = '+' + added;
+  document.getElementById('gl-flagged').textContent = flagged.length;
+  document.getElementById('gl-lost').textContent = assets.filter(a => C.noteObj(a).condition === 'lost').length;
+  document.getElementById('gl-replace').textContent = '—'; // needs budget config from prefs
+}
+
+// Filter pills
+document.querySelectorAll('.board-filter-pill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.board-filter-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const f = btn.dataset.filter;
+    document.querySelectorAll('#school-grid .school-card').forEach(card => {
+      const h = card.dataset.health;
+      let show = f === 'all' || (f === 'bad' && (h === 'bad' || h === 'warn')) || (f === 'good' && h === 'good');
+      card.style.display = show ? '' : 'none';
+    });
+  });
+});
+
+AssetsCore.boot({
+  allow: ['board'],
+  onReady: render
+});
+</script>
+
+</body>
+</html>

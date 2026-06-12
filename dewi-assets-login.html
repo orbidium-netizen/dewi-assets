@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign in — Dewi Assets</title>
+<meta name="description" content="School inventory administration for principals, vice-principals, and district technology coordinators.">
+<link rel="stylesheet" href="dewi.css">
+<link rel="stylesheet" href="dewi-assets.css">
+
+<!-- Supabase (Safari-safe onload pattern) -->
+<script>
+let db = null;
+function initSupabase() {
+  try {
+    const { createClient } = supabase;
+    db = createClient(
+      'https://ivdkipygpasvowigarfb.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2ZGtpcHlncGFzdm93aWdhcmZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMzA2NzcsImV4cCI6MjA5MjcwNjY3N30.qKN6tCqyyIIVoPAVl1o2_2gtUkfBh2aBWDP_sIDcxgE'
+    );
+  } catch(e) { console.error('Supabase init failed:', e.message); }
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="initSupabase()"></script>
+
+<style>
+body { background: var(--paper); overflow: hidden; }
+body::after { z-index: 1; }
+
+.login-shell {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  min-height: 100vh;
+  position: relative;
+  z-index: 2;
+}
+
+/* ───────── LEFT — photo panel ───────── */
+.login-photo {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #2a1f12 0%, #1a130a 100%);
+}
+
+/* PHOTO: Modern school administrator desk, clean and organized, warm morning light through windows, laptop open, no people visible, horizontal format */
+.login-photo img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: center 40%;
+}
+
+/* Placeholder rendering while photo missing — subtle striped warm gradient */
+.login-photo-fallback {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(135deg, #3a2a18 0%, #1f1509 100%),
+    repeating-linear-gradient(45deg,
+      transparent 0, transparent 12px,
+      rgba(255,255,255,0.015) 12px, rgba(255,255,255,0.015) 24px);
+  background-blend-mode: overlay;
+  display: flex;
+  align-items: flex-end;
+  padding: 56px;
+}
+.login-photo-fallback .ph-spec {
+  font-family: 'Jost', sans-serif;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: rgba(212, 167, 106, 0.55);
+  border: 1px dashed rgba(212, 167, 106, 0.32);
+  border-radius: var(--r-pill);
+  padding: 6px 16px;
+}
+
+.login-photo-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg,
+    rgba(15,10,5,0.30) 0%,
+    rgba(15,10,5,0.10) 40%,
+    rgba(15,10,5,0.70) 100%);
+  display: flex; flex-direction: column;
+  justify-content: space-between;
+  padding: 48px 52px 44px;
+}
+
+.login-photo-top {
+  display: flex; align-items: center; gap: 14px;
+}
+.login-photo-top .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #D4A76A;
+  box-shadow: 0 0 0 3px rgba(212,167,106,0.20);
+}
+.login-photo-top .lbl {
+  font-family: 'Jost', sans-serif;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.28em; text-transform: uppercase;
+  color: rgba(245,239,228,0.6);
+}
+
+.login-photo-bottom {
+  max-width: 460px;
+}
+.login-photo-bottom blockquote {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--paper);
+  letter-spacing: -0.2px;
+  margin-bottom: 16px;
+}
+.login-photo-bottom blockquote::before {
+  content: '\201C';
+  color: #D4A76A;
+  margin-right: 2px;
+}
+.login-photo-bottom blockquote::after {
+  content: '\201D';
+  color: #D4A76A;
+}
+.login-photo-cite {
+  font-family: 'Jost', sans-serif;
+  font-size: 12px;
+  color: rgba(245,239,228,0.7);
+}
+.login-photo-cite strong {
+  display: block; font-weight: 600; color: var(--paper);
+  font-size: 13px; margin-bottom: 2px;
+}
+
+/* ───────── RIGHT — form panel ───────── */
+.login-form-panel {
+  background: var(--cream);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 40px 56px 36px;
+  position: relative;
+  border-left: 1px solid var(--paper-deep);
+}
+
+.login-form-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 0;
+}
+.login-form-top .back-link {
+  font-family: 'Jost', sans-serif;
+  font-size: 12px; color: var(--ink-soft);
+  display: inline-flex; align-items: center; gap: 6px;
+  letter-spacing: 0.02em;
+}
+.login-form-top .back-link:hover { color: var(--tobacco); }
+.login-form-top .help-link {
+  font-family: 'Jost', sans-serif;
+  font-size: 12px; color: var(--ink-soft);
+}
+.login-form-top .help-link:hover { color: var(--tobacco); }
+
+.login-form-inner {
+  max-width: 400px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex; flex-direction: column;
+  flex: 1;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.login-brand {
+  margin-bottom: 44px;
+}
+.login-wordmark {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 48px;
+  font-weight: 700;
+  font-style: italic;
+  color: var(--ink);
+  line-height: 1;
+  letter-spacing: -1.2px;
+}
+.login-wordmark .assets {
+  color: var(--tobacco);
+}
+.login-wordmark-sub {
+  font-family: 'Jost', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.30em;
+  text-transform: uppercase;
+  color: var(--ink-ghost);
+  margin-top: 14px;
+}
+.login-tagline {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  font-style: italic;
+  font-weight: 500;
+  color: var(--ink-mid);
+  line-height: 1.35;
+  margin-top: 22px;
+  letter-spacing: -0.2px;
+  max-width: 340px;
+}
+
+.login-form {
+  display: flex; flex-direction: column; gap: 16px;
+}
+.login-field {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.login-field-label {
+  font-family: 'Jost', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.login-field-label .req {
+  color: var(--tobacco); margin-left: 2px;
+}
+.login-input {
+  background: var(--paper);
+  border: 1.5px solid var(--paper-deep);
+  border-radius: var(--r-pill);
+  padding: 13px 22px;
+  font-family: 'Jost', sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+  outline: none;
+  transition: all 0.2s;
+}
+.login-input:focus {
+  border-color: var(--tobacco);
+  box-shadow: 0 0 0 4px var(--tobacco-glow);
+  background: var(--cream);
+}
+.login-input::placeholder { color: var(--ink-ghost); }
+
+.login-row-between {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 4px;
+}
+.login-remember {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: 'Jost', sans-serif;
+  font-size: 12px;
+  color: var(--ink-mid);
+  cursor: pointer; user-select: none;
+}
+.login-remember input { display: none; }
+.login-remember .box {
+  width: 16px; height: 16px;
+  border: 1.5px solid var(--paper-deep);
+  border-radius: 4px;
+  background: var(--paper);
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.login-remember input:checked + .box {
+  background: var(--tobacco);
+  border-color: var(--tobacco);
+}
+.login-remember input:checked + .box::after {
+  content: '';
+  width: 4px; height: 8px;
+  border: solid var(--paper);
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+.login-forgot {
+  font-family: 'Jost', sans-serif;
+  font-size: 12px;
+  color: var(--tobacco);
+  font-weight: 500;
+}
+.login-forgot:hover { text-decoration: underline; }
+
+.login-submit {
+  background: var(--tobacco);
+  color: var(--paper);
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 15px 24px;
+  font-family: 'Jost', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 16px var(--tobacco-glow);
+  margin-top: 12px;
+}
+.login-submit:hover {
+  background: var(--tobacco-mid);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(107,76,42,0.28);
+}
+.login-submit::after {
+  content: '→';
+  font-size: 16px;
+  transition: transform 0.2s;
+}
+.login-submit:hover::after { transform: translateX(3px); }
+
+/* Invite-code toggle */
+.invite-toggle {
+  text-align: center;
+  font-family: 'Jost', sans-serif;
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-top: 6px;
+  cursor: pointer;
+  padding: 8px;
+  background: none; border: none;
+  width: 100%;
+  transition: color 0.15s;
+}
+.invite-toggle:hover { color: var(--tobacco); }
+.invite-toggle .chev {
+  display: inline-block;
+  margin-left: 4px;
+  transition: transform 0.2s;
+}
+.invite-toggle.open .chev { transform: rotate(180deg); }
+
+.invite-panel {
+  background: var(--tobacco-lt);
+  border: 1px solid rgba(107,76,42,0.18);
+  border-radius: var(--r-card);
+  padding: 18px 20px;
+  margin-top: 4px;
+  display: none;
+  animation: fadeUp 0.25s ease;
+}
+.invite-panel.open { display: block; }
+.invite-panel .invite-blurb {
+  font-size: 12px; color: var(--tobacco-deep);
+  line-height: 1.55; margin-bottom: 12px;
+}
+.invite-panel .invite-input {
+  background: var(--cream);
+  border: 1.5px solid rgba(107,76,42,0.25);
+  border-radius: var(--r-pill);
+  padding: 11px 20px;
+  font-family: 'Jost', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: 0.16em;
+  outline: none;
+  width: 100%;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+.invite-panel .invite-input:focus {
+  border-color: var(--tobacco);
+  box-shadow: 0 0 0 3px var(--tobacco-glow);
+}
+.invite-panel .invite-input::placeholder {
+  letter-spacing: 0.08em; text-transform: none;
+  font-weight: 400; color: var(--tobacco);
+  opacity: 0.45;
+}
+
+/* ───────── footer ───────── */
+.login-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+  font-family: 'Jost', sans-serif;
+  font-size: 11px;
+  color: var(--ink-ghost);
+}
+.login-foot-meta {
+  display: flex; align-items: center; gap: 10px;
+  letter-spacing: 0.04em;
+}
+.login-foot-meta .sep { color: var(--paper-deep); }
+.login-foot-status {
+  display: inline-flex; align-items: center; gap: 6px;
+  letter-spacing: 0.08em;
+}
+.login-foot-status::before {
+  content: ''; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--health-good);
+  box-shadow: 0 0 0 3px var(--health-good-lt);
+}
+
+/* Decorative tobacco rule on right panel */
+.login-rule {
+  position: absolute;
+  top: 50%; right: -1px;
+  width: 3px; height: 40px;
+  background: var(--tobacco);
+  border-radius: 2px;
+  transform: translateY(-50%);
+  display: none;
+}
+
+/* ───────── Mobile: show right panel only ───────── */
+@media (max-width: 860px) {
+  body { overflow: auto; }
+  .login-shell { grid-template-columns: 1fr; min-height: 100vh; }
+  .login-photo { display: none; }
+  .login-form-panel { border-left: none; padding: 28px 24px 28px; }
+  .login-form-inner { padding: 36px 0; }
+  .login-wordmark { font-size: 40px; }
+  .login-tagline { font-size: 19px; }
+  .login-foot { font-size: 10px; }
+}
+</style>
+</head>
+<body>
+
+<div class="login-shell">
+
+  <!-- ═════════ LEFT — photo panel ═════════ -->
+  <div class="login-photo">
+    <!-- PHOTO: Modern school administrator desk, clean and organized, warm morning light through windows, laptop open, no people visible, horizontal format -->
+    <img src="images/admin-desk.png" alt="School administrator desk" onerror="this.style.display='none'">
+
+    <div class="login-photo-fallback">
+      <div class="ph-spec">Photo · admin-desk.png</div>
+    </div>
+
+    <div class="login-photo-overlay">
+      <div class="login-photo-top">
+        <span class="dot"></span>
+        <span class="lbl">Dewi Family · Administration</span>
+      </div>
+
+      <div class="login-photo-bottom">
+        <blockquote>I scanned three Chromebooks during a fire drill and knew exactly which classroom had lost theirs by the time we got back inside.</blockquote>
+        <div class="login-photo-cite">
+          <strong>Margaret Chen</strong>
+          Vice-Principal · Riverside Junior High
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════ RIGHT — form panel ═════════ -->
+  <div class="login-form-panel">
+
+    <div class="login-form-top">
+      <a class="back-link" href="#">← Dewi home</a>
+      <a class="help-link" href="#">Need help signing in?</a>
+    </div>
+
+    <div class="login-form-inner">
+
+      <!-- Brand -->
+      <div class="login-brand">
+        <div class="login-wordmark">Dewi<span class="assets"> Assets</span></div>
+        <div class="login-wordmark-sub">School Inventory Administration</div>
+        <p class="login-tagline">School inventory. <br>Finally <em>under control.</em></p>
+      </div>
+
+      <!-- Form -->
+      <form class="login-form" onsubmit="event.preventDefault();handleSignIn();">
+
+        <div class="login-error" id="login-error"></div>
+
+        <div class="login-field">
+          <label class="login-field-label" for="admin-email">School email <span class="req">·</span></label>
+          <input class="login-input" id="admin-email" type="email" autocomplete="email" placeholder="m.chen@riverside.gnspes.ca" required>
+        </div>
+
+        <div class="login-field">
+          <label class="login-field-label" for="admin-pw">Password <span class="req">·</span></label>
+          <input class="login-input" id="admin-pw" type="password" autocomplete="current-password" placeholder="••••••••••••" required>
+        </div>
+
+        <div class="login-row-between">
+          <label class="login-remember">
+            <input type="checkbox" checked>
+            <span class="box"></span>
+            <span>Stay signed in</span>
+          </label>
+          <a class="login-forgot" href="#">Forgot password?</a>
+        </div>
+
+        <button class="login-submit" type="submit">Sign in to Dewi Assets</button>
+
+        <button class="invite-toggle" type="button" id="invite-toggle" onclick="toggleInvite()">
+          Using an invite code? <span class="chev">▾</span>
+        </button>
+
+        <div class="invite-panel" id="invite-panel">
+          <p class="invite-blurb">Invite codes are issued by your school or district when Dewi Assets is first activated. One code per administrator — it expires after first use. Enter your email and a new password above, paste the code, and choose "Create account".</p>
+          <input class="invite-input" id="invite-code" type="text" placeholder="Paste your invite code" maxlength="40" autocomplete="off">
+          <button class="login-submit" type="button" style="width:100%;margin-top:12px;" onclick="handleInviteSignup()">Create account with invite</button>
+        </div>
+
+      </form>
+    </div>
+
+    <!-- Footer -->
+    <div class="login-foot">
+      <div class="login-foot-meta">
+        <span>© 2026 Dewi Family</span>
+        <span class="sep">·</span>
+        <a href="#">Privacy</a>
+        <span class="sep">·</span>
+        <a href="#">FERPA / PIPEDA</a>
+      </div>
+      <div class="login-foot-status">All systems operational</div>
+    </div>
+
+  </div>
+
+</div>
+
+<script src="dewi-assets-core.js"></script>
+<script>
+function toggleInvite() {
+  document.getElementById('invite-toggle').classList.toggle('open');
+  document.getElementById('invite-panel').classList.toggle('open');
+}
+
+function showError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+function clearError() {
+  document.getElementById('login-error').classList.remove('show');
+}
+
+function routeByRole(role) {
+  window.location.href = role === 'board'
+    ? 'dewi-assets-board.html'
+    : 'dewi-assets-dashboard.html';
+}
+
+/* Look up the admin profile for the signed-in user and route.
+   Returns false (and signs out) if no admin_accounts row exists. */
+async function routeSignedInAdmin() {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) return false;
+  const { data: profile } = await db
+    .from('admin_accounts').select('role').eq('id', session.user.id).maybeSingle();
+  if (!profile) return false;
+  routeByRole(profile.role);
+  return true;
+}
+
+async function handleSignIn() {
+  clearError();
+  if (!db) { showError('Still connecting — try again in a second.'); return; }
+  const email = document.getElementById('admin-email').value.trim();
+  const password = document.getElementById('admin-pw').value;
+  if (!email || !password) return;
+
+  const btn = document.querySelector('.login-submit[type="submit"]');
+  const orig = btn.textContent;
+  btn.textContent = 'Signing in…';
+  btn.disabled = true;
+
+  try {
+    const { error } = await db.auth.signInWithPassword({ email: email, password: password });
+    if (error) {
+      showError(error.message === 'Invalid login credentials'
+        ? 'That email and password combination wasn\u2019t recognised. Check both and try again.'
+        : error.message);
+      return;
+    }
+    const ok = await routeSignedInAdmin();
+    if (!ok) {
+      await db.auth.signOut();
+      showError('This account isn\u2019t set up for Dewi Assets. If you have an invite code, use it below — otherwise contact your board administrator.');
+    }
+  } catch (e) {
+    showError('Sign-in failed: ' + e.message);
+  } finally {
+    btn.textContent = orig;
+    btn.disabled = false;
+  }
+}
+
+/* Invite flow: new admin sets email + password in the main fields,
+   pastes the invite code, and we create the auth user + admin row. */
+async function handleInviteSignup() {
+  clearError();
+  if (!db) { showError('Still connecting — try again in a second.'); return; }
+  const email = document.getElementById('admin-email').value.trim();
+  const password = document.getElementById('admin-pw').value;
+  const code = document.getElementById('invite-code').value.trim();
+  if (!email || !password) { showError('Enter your school email and a new password above first.'); return; }
+  if (password.length < 8) { showError('Choose a password of at least 8 characters.'); return; }
+  if (!code) { showError('Paste your invite code.'); return; }
+
+  try {
+    // Sign up (or sign in, if the auth user already exists from a previous attempt)
+    let { error: suErr } = await db.auth.signUp({ email: email, password: password });
+    if (suErr && /already registered/i.test(suErr.message)) {
+      const { error: siErr } = await db.auth.signInWithPassword({ email: email, password: password });
+      if (siErr) { showError(siErr.message); return; }
+    } else if (suErr) {
+      showError(suErr.message);
+      return;
+    }
+
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) {
+      showError('Account created — check your inbox to confirm your email, then sign in and re-enter the invite code.');
+      return;
+    }
+
+    const { data, error } = await db.rpc('accept_admin_invite', { invite_code: code });
+    if (error) { showError(error.message); return; }
+    if (!data || !data.ok) { showError((data && data.error) || 'Invite could not be accepted.'); return; }
+    routeByRole(data.role);
+  } catch (e) {
+    showError('Something went wrong: ' + e.message);
+  }
+}
+
+/* If already signed in as an admin, skip the form entirely */
+AssetsCore.waitForDbThenAuth(function () {
+  routeSignedInAdmin();
+});
+</script>
+
+</body>
+</html>

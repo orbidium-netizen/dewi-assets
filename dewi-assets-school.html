@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Northview Elementary — Dewi Assets</title>
+<meta name="description" content="School-level device inventory for Northview Elementary, within Halifax Regional Centre for Education.">
+<link rel="stylesheet" href="dewi.css">
+<link rel="stylesheet" href="dewi-assets.css">
+<link rel="stylesheet" href="dewi-board.css">
+
+<script>
+let db = null;
+function initSupabase() {
+  try {
+    const { createClient } = supabase;
+    db = createClient(
+      'https://ivdkipygpasvowigarfb.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2ZGtpcHlncGFzdm93aWdhcmZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMzA2NzcsImV4cCI6MjA5MjcwNjY3N30.qKN6tCqyyIIVoPAVl1o2_2gtUkfBh2aBWDP_sIDcxgE'
+    );
+  } catch(e) { console.error('Supabase init failed:', e.message); }
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="initSupabase()"></script>
+
+<style>
+/* School hero stat bar → 6-up */
+.board-hero-stats.six { grid-template-columns: repeat(6, 1fr); }
+
+/* Breadcrumb in topbar */
+.crumb { display: inline-flex; align-items: center; gap: 8px; font-family: 'Jost', sans-serif; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-ghost); margin-top: 2px; }
+.crumb a { color: var(--tobacco); font-weight: 600; }
+.crumb a:hover { text-decoration: underline; }
+.crumb .sep { color: var(--paper-deep); }
+
+/* Carts grid */
+.carts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(264px, 1fr)); gap: 14px; margin-bottom: 30px; }
+
+/* ── Age distribution strip ── */
+.age-strip { background: var(--cream); border: 1px solid var(--paper-deep); border-radius: var(--r-card); padding: 24px 28px; box-shadow: var(--shadow-sm); }
+.age-strip-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 18px; gap: 12px; flex-wrap: wrap; }
+.age-strip-head h3 { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; color: var(--ink); letter-spacing: -0.3px; }
+.age-strip-head h3 em { font-style: italic; color: var(--tobacco); }
+.age-strip-head .sub { font-size: 12px; color: var(--ink-soft); margin-top: 3px; }
+.age-strip-head a { font-family: 'Jost', sans-serif; font-size: 12px; font-weight: 600; color: var(--tobacco); letter-spacing: 0.04em; }
+.age-strip-bar { height: 14px; border-radius: var(--r-pill); overflow: hidden; background: var(--paper-warm); border: 1px solid var(--paper-deep); display: flex; margin-bottom: 16px; }
+.age-strip-bar > span { height: 100%; display: flex; align-items: center; justify-content: center; font-family: 'Jost', sans-serif; font-size: 10px; font-weight: 600; color: var(--paper); }
+.age-strip-bar .seg-good { background: var(--health-good); }
+.age-strip-bar .seg-warn { background: var(--health-warn); }
+.age-strip-bar .seg-bad  { background: var(--health-bad); }
+.age-strip-legend { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.age-legend-item { display: flex; flex-direction: column; gap: 2px; padding-left: 14px; border-left: 3px solid var(--paper-deep); }
+.age-legend-item.good { border-left-color: var(--health-good); }
+.age-legend-item.warn { border-left-color: var(--health-warn); }
+.age-legend-item.bad  { border-left-color: var(--health-bad); }
+.age-legend-num { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 700; color: var(--ink); line-height: 1; }
+.age-legend-range { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: var(--ink-mid); margin-top: 4px; }
+.age-legend-desc { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+
+/* ── Flagged panel (right rail) ── */
+.flagged-panel { background: var(--cream); border: 1px solid var(--paper-deep); border-radius: var(--r-card); overflow: hidden; box-shadow: var(--shadow-sm); }
+.flagged-panel-head { padding: 18px 22px 14px; border-bottom: 1px solid var(--paper-warm); display: flex; align-items: center; justify-content: space-between; }
+.flagged-panel-head h3 { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; color: var(--ink); }
+.flagged-panel-head .count { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 22px; font-weight: 700; color: var(--health-bad); line-height: 1; }
+.flagged-list { display: flex; flex-direction: column; }
+.flagged-item { display: flex; align-items: center; gap: 12px; padding: 12px 22px; border-bottom: 1px solid var(--paper-warm); transition: background 0.15s; cursor: pointer; }
+.flagged-item:last-child { border-bottom: none; }
+.flagged-item:hover { background: var(--paper); }
+.flagged-item .ico { width: 28px; height: 28px; border-radius: 8px; background: var(--health-bad-lt); color: var(--health-bad); display: flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+.flagged-item .ico.warn { background: var(--health-warn-lt); color: var(--health-warn); }
+.flagged-item .body { flex: 1; min-width: 0; }
+.flagged-item .serial { font-family: 'Jost', sans-serif; font-size: 12px; font-weight: 600; color: var(--ink); letter-spacing: 0.04em; }
+.flagged-item .meta { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+.flagged-item .reason { font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--health-bad); }
+.flagged-item .reason.warn { color: var(--health-warn); }
+.flagged-panel-foot { padding: 12px 22px; background: var(--paper); border-top: 1px solid var(--paper-warm); text-align: center; }
+.flagged-panel-foot a { font-family: 'Jost', sans-serif; font-size: 12px; font-weight: 600; color: var(--tobacco); letter-spacing: 0.04em; }
+.flagged-panel-foot a:hover { text-decoration: underline; }
+
+@media (max-width: 860px) {
+  .board-hero-stats.six { grid-template-columns: repeat(3, 1fr); }
+  .age-strip-legend { grid-template-columns: 1fr; }
+}
+@media (max-width: 620px) {
+  .board-hero-stats.six { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- ═════════ Sidebar ═════════ -->
+<aside class="sidebar">
+  <a href="dewi-assets-board.html" class="sidebar-logo assets-logo" style="text-decoration:none">
+    <div class="word">Dewi<span class="amp"> Assets</span></div>
+    <div class="sub">Board Administration</div>
+  </a>
+
+  <div class="sidebar-board">
+    <div class="lbl">Board</div>
+    <div class="name">Halifax Regional Centre for Education</div>
+    <div class="role">8 schools · 2,352 devices</div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="sidebar-nav-label">District</div>
+    <a class="nav-item" href="dewi-assets-board.html" style="text-decoration:none"><div class="nav-dot"></div>Dashboard</a>
+    <a class="nav-item active" href="dewi-assets-board.html" style="text-decoration:none"><div class="nav-dot"></div>Schools<span class="nav-badge badge-paper">8</span></a>
+    <a class="nav-item" href="dewi-assets-fleet.html" style="text-decoration:none"><div class="nav-dot"></div>Fleet Health</a>
+    <a class="nav-item" href="dewi-assets-search.html" style="text-decoration:none"><div class="nav-dot"></div>Device Search</a>
+    <a class="nav-item" href="dewi-assets-reports.html" style="text-decoration:none"><div class="nav-dot"></div>Reports</a>
+    <a class="nav-item" href="dewi-assets-settings.html" style="text-decoration:none"><div class="nav-dot"></div>Settings</a>
+  </nav>
+
+  <div class="sidebar-user">
+    <div class="avi">R</div>
+    <div class="info">
+      <div class="name">R. MacIntyre</div>
+      <div class="role">District Technology Coordinator</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ═════════ Main ═════════ -->
+<main class="main">
+
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" style="font-style:italic;">Northview Elementary</div>
+      <div class="crumb"><a href="dewi-assets-board.html">Board</a><span class="sep">›</span>Schools<span class="sep">›</span>Northview Elementary</div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-stat">Last scan <strong style="color:var(--tobacco);">today, 8:42 AM</strong></div>
+      <a class="btn btn-secondary btn-sm" href="dewi-assets-board.html" style="text-decoration:none">← Board</a>
+      <a class="btn btn-sm" href="dewi-assets-search.html" style="text-decoration:none;background:var(--tobacco);color:var(--paper);border-radius:var(--r-pill);padding:7px 16px;border:none;font-family:'Jost',sans-serif;font-size:12px;font-weight:500;">Find a device</a>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ═══ SCHOOL HERO ═══ -->
+    <section class="board-hero">
+      <div class="board-hero-img">
+        <!-- PHOTO: Modern elementary hallway, floor-to-ceiling windows, colourful lockers, Northview Elementary -->
+        <img src="images/school-hallway2.png" alt="Northview Elementary hallway in morning light" onerror="this.style.display='none'" style="object-position:center 46%;">
+      </div>
+      <div class="board-hero-overlay">
+        <div class="board-hero-top">
+          <div class="board-hero-eyebrow">School · Live Inventory</div>
+          <h1 class="board-hero-title">Northview Elementary</h1>
+          <p class="board-hero-sub">Dartmouth · 342 students · 6 carts. One of the board's newest builds — and one of its healthiest fleets.</p>
+        </div>
+
+        <div class="board-hero-stats six">
+          <div class="bh-stat"><div class="bh-stat-num">186</div><div class="bh-stat-lbl">Total devices</div></div>
+          <div class="bh-stat"><div class="bh-stat-num">144</div><div class="bh-stat-lbl">Chromebooks</div></div>
+          <div class="bh-stat"><div class="bh-stat-num">42</div><div class="bh-stat-lbl">iPads</div></div>
+          <div class="bh-stat"><div class="bh-stat-num">171</div><div class="bh-stat-lbl">Assigned</div></div>
+          <div class="bh-stat"><div class="bh-stat-num warn">3</div><div class="bh-stat-lbl">Expiring this year</div></div>
+          <div class="bh-stat"><div class="bh-stat-num bad">4</div><div class="bh-stat-lbl">Flagged · replace</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ Two-column: carts + flagged ═══ -->
+    <div class="board-grid">
+
+      <!-- Left: carts + age -->
+      <div>
+        <div class="board-section-head">
+          <div>
+            <h2>Six <em>carts</em></h2>
+            <div class="meta">Open a cart for its full device list, condition history, and student assignments.</div>
+          </div>
+          <div class="board-section-tools">
+            <button class="board-filter-pill active" data-filter="all">All</button>
+            <button class="board-filter-pill" data-filter="attn">Needs attention</button>
+            <button class="board-filter-pill" data-filter="good">Healthy</button>
+          </div>
+        </div>
+
+        <div class="carts-grid" id="carts-grid">
+
+          <a class="cart-card" href="dewi-assets-cart.html" data-health="good">
+            <div class="cart-card-top">
+              <div>
+                <div class="cart-card-num">01</div>
+                <div class="cart-card-name">Primary Cart · K–2</div>
+                <div class="cart-card-meta">Room 101 · shared by all primary</div>
+              </div>
+              <div class="cart-card-health"></div>
+            </div>
+            <div class="cart-card-bar"><span class="good" style="width:90%"></span><span class="warn" style="width:8%"></span><span class="bad" style="width:2%"></span></div>
+            <div class="cart-card-stats">
+              <div class="cart-card-stat"><div class="n">32</div><div class="l">Devices</div></div>
+              <div class="cart-card-stat"><div class="n">30</div><div class="l">Assigned</div></div>
+              <div class="cart-card-stat"><div class="n">0</div><div class="l">Flagged</div></div>
+            </div>
+          </a>
+
+          <a class="cart-card" href="dewi-assets-cart.html" data-health="good">
+            <div class="cart-card-top">
+              <div>
+                <div class="cart-card-num">02</div>
+                <div class="cart-card-name">Grade 3 Cart</div>
+                <div class="cart-card-meta">Room 108 · shared by 3-1, 3-2</div>
+              </div>
+              <div class="cart-card-health"></div>
+            </div>
+            <div class="cart-card-bar"><span class="good" style="width:86%"></span><span class="warn" style="width:12%"></span><span class="bad" style="width:2%"></span></div>
+            <div class="cart-card-stats">
+              <div class="cart-card-stat"><div class="n">30</div><div class="l">Devices</div></div>
+              <div class="cart-card-stat"><div class="n">28</div><div class="l">Assigned</div></div>
+              <div class="cart-card-stat"><div class="n">0</div><div class="l">Flagged</div></div>
+            </div>
+          </a>
+
+          <a class="cart-card" href="dewi-assets-cart.html" data-health="warn">
+            <div class="cart-card-top">
+              <div>
+                <div class="cart-card-num">03</div>
+                <div class="cart-card-name">Grade 4–5 Cart</div>
+                <div class="cart-card-meta">Room 114 · shared by 4-1, 5-1</div>
+              </div>
+              <div class="cart-card-health warn"></div>
+            </div>
+            <div class="cart-card-bar"><span class="good" style="width:64%"></span><span class="warn" style="width:30%"></span><span class="bad" style="width:6%"></span></div>
+            <div class="cart-card-stats">
+              <div class="cart-card-stat"><div class="n">34</div><div class="l">Devices</div></div>
+              <div class="cart-card-stat"><div class="n">31</div><div class="l">Assigned</div></div>
+              <div class="cart-card-stat"><div class="n" style="color:var(--health-warn);">1</div><div class="l">Flagged</div></div>
+            </div>
+          </a>
+
+          <a class="cart-card" href="dewi-assets-cart.html" data-health="good">
+            <div class="cart-card-top">
+              <div>
+                <div class="cart-card-num">04</div>
+                <div class="cart-card-name">Library Loaners</div>
+                <div class="cart-card-meta">Library · all grades · day-loan</div>
+              </div>
+              <div class="cart-card-health"></div>
+            </div>
+            <div class="cart-card-bar"><span class="good" style="width:92%"></span><span class="warn" style="width:8%"></span></div>
+            <div class="cart-card-stats">
+              <div class="cart-card-stat"><div class="n">26</div><div class="l">Devices</div></div>
+              <div class="cart-card-stat"><div class="n">19</div><div class="l">Assigned</div></div>
+              <div class="cart-card-stat"><div class="n">0</div><div class="l">Flagged</div></div>
+            </div>
+          </a>
+
+          <a class="cart-card" href="dewi-assets-cart.html" data-health="warn">
+            <div class="cart-card-top">
+              <div>
+                <div class="cart-card-num">05</div>
+                <div class="cart-card-name">French Immersion iPads</div>
+                <div class="cart-card-meta">Room 120 · shared by FI classes</div>
+              </div>
+              <div class="cart-card-health warn"></div>
+            </div>
+            <div class="cart-card-bar"><span class="good" style="width:58%"></span><span class="warn" style="width:34%"></span><span class="bad" style="width:8%"></span></div>
+            <div class="cart-card-stats">
+              <div class="cart-card-stat"><div class="n">42</div><div class="l">Devices</div></div>
+              <div class="cart-card-stat"><div class="n">37</div><div class="l">Assigned</div></div>
+              <div class="cart-card-stat"><div class="n" style="color:var(--health-bad);">3</div><div class="l">Flagged</div></div>
+            </div>
+          </a>
+
+          <a class="cart-card" href="dewi-assets-cart.html" data-health="good">
+            <div class="cart-card-top">
+              <div>
+                <div class="cart-card-num">06</div>
+                <div class="cart-card-name">Resource &amp; Reading</div>
+                <div class="cart-card-meta">Room 105 · IEP / literacy support</div>
+              </div>
+              <div class="cart-card-health"></div>
+            </div>
+            <div class="cart-card-bar"><span class="good" style="width:94%"></span><span class="warn" style="width:6%"></span></div>
+            <div class="cart-card-stats">
+              <div class="cart-card-stat"><div class="n">22</div><div class="l">Devices</div></div>
+              <div class="cart-card-stat"><div class="n">26</div><div class="l">Assigned</div></div>
+              <div class="cart-card-stat"><div class="n">0</div><div class="l">Flagged</div></div>
+            </div>
+          </a>
+
+        </div>
+
+        <!-- ═══ Age distribution ═══ -->
+        <section class="age-strip">
+          <div class="age-strip-head">
+            <div>
+              <h3>Age distribution · <em>a young fleet</em></h3>
+              <div class="sub">Plan replacements before Auto Update Expiry hits. Tobacco devices on the right are next.</div>
+            </div>
+            <a href="dewi-assets-fleet.html">Open fleet health →</a>
+          </div>
+          <div class="age-strip-bar">
+            <span class="seg-good" style="width:71%;">71%</span>
+            <span class="seg-warn" style="width:23%;">23%</span>
+            <span class="seg-bad"  style="width:6%;">6%</span>
+          </div>
+          <div class="age-strip-legend">
+            <div class="age-legend-item good">
+              <div class="age-legend-num">132</div>
+              <div class="age-legend-range">0–2 years · new</div>
+              <div class="age-legend-desc">Bought 2024–2026. AUE well past 2031.</div>
+            </div>
+            <div class="age-legend-item warn">
+              <div class="age-legend-num">43</div>
+              <div class="age-legend-range">3–4 years · mid-life</div>
+              <div class="age-legend-desc">Bought 2022–2023. AUE 2029–2030.</div>
+            </div>
+            <div class="age-legend-item bad">
+              <div class="age-legend-num">11</div>
+              <div class="age-legend-range">5+ years · plan replacement</div>
+              <div class="age-legend-desc">First-intake iPads. AUE this year.</div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Right rail: flagged + glance -->
+      <aside class="aue-rail">
+
+        <div class="flagged-panel">
+          <div class="flagged-panel-head">
+            <h3>Flagged devices</h3>
+            <div class="count">4</div>
+          </div>
+          <div class="flagged-list">
+            <div class="flagged-item">
+              <div class="ico">!</div>
+              <div class="body"><div class="serial">DMPX19QZ4</div><div class="meta">Cart 05 · slot 14 · iPad 6</div></div>
+              <div class="reason">Screen</div>
+            </div>
+            <div class="flagged-item">
+              <div class="ico">!</div>
+              <div class="body"><div class="serial">DMPX21KL8</div><div class="meta">Cart 05 · slot 03 · iPad 6</div></div>
+              <div class="reason">Battery</div>
+            </div>
+            <div class="flagged-item">
+              <div class="ico">!</div>
+              <div class="body"><div class="serial">DMPX19RT2</div><div class="meta">Cart 05 · slot 21 · iPad 6</div></div>
+              <div class="reason">AUE 2025</div>
+            </div>
+            <div class="flagged-item">
+              <div class="ico warn">?</div>
+              <div class="body"><div class="serial">AC4471T18</div><div class="meta">Cart 03 · slot 09 · Acer CB</div></div>
+              <div class="reason warn">Missing</div>
+            </div>
+          </div>
+          <div class="flagged-panel-foot">
+            <a href="dewi-assets-search.html">Find &amp; resolve flagged →</a>
+          </div>
+        </div>
+
+        <div class="glance-card">
+          <h4>School at a glance</h4>
+          <div class="glance-row"><span class="lbl">Assignment rate</span><span class="val good">91.9%</span></div>
+          <div class="glance-row"><span class="lbl">Avg device age</span><span class="val">1.8 yr</span></div>
+          <div class="glance-row"><span class="lbl">Devices added this year</span><span class="val">+54</span></div>
+          <div class="glance-row"><span class="lbl">Unassigned</span><span class="val warn">15</span></div>
+          <div class="glance-row"><span class="lbl">Lost / unaccounted</span><span class="val bad">1</span></div>
+          <div class="glance-row"><span class="lbl">Last full audit</span><span class="val">May 2026</span></div>
+        </div>
+
+      </aside>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="board-foot">
+      <div class="meta">
+        <span>© 2026 Dewi · Anchored Development Co</span>
+        <span class="sep">·</span>
+        <a href="#">Privacy</a>
+        <span class="sep">·</span>
+        <a href="#">FERPA / PIPEDA</a>
+      </div>
+      <div class="status">All systems operational</div>
+    </footer>
+
+  </div>
+</main>
+
+<!-- Floating scan button -->
+<a class="scan-fab" href="dewi-assets-search.html">
+  <span class="glyph">⌖</span>
+  <span>Find any device<span class="sub">Search across the board</span></span>
+</a>
+
+<script>
+document.querySelectorAll('.board-filter-pill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.board-filter-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const f = btn.dataset.filter;
+    document.querySelectorAll('#carts-grid .cart-card').forEach(card => {
+      const h = card.dataset.health;
+      const show = f === 'all' || (f === 'attn' && h === 'warn') || (f === 'good' && h === 'good');
+      card.style.display = show ? '' : 'none';
+    });
+  });
+});
+</script>
+
+<script src="dewi-assets-core.js"></script>
+<script>
+AssetsCore.boot({
+  allow: ['board'],
+  onReady: function (ctx) {
+    // School page data wiring is Phase 2 — auth gate is active.
+  }
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Device Search — Dewi Assets</title>
+<meta name="description" content="Find any device anywhere in the board by serial number — location chain, history, and actions.">
+<link rel="stylesheet" href="dewi.css">
+<link rel="stylesheet" href="dewi-assets.css">
+<link rel="stylesheet" href="dewi-board.css">
+
+<script>
+let db = null;
+function initSupabase() {
+  try {
+    const { createClient } = supabase;
+    db = createClient(
+      'https://ivdkipygpasvowigarfb.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2ZGtpcHlncGFzdm93aWdhcmZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMzA2NzcsImV4cCI6MjA5MjcwNjY3N30.qKN6tCqyyIIVoPAVl1o2_2gtUkfBh2aBWDP_sIDcxgE'
+    );
+  } catch(e) { console.error('Supabase init failed:', e.message); }
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="initSupabase()"></script>
+
+<style>
+.main { background: var(--paper); }
+.content { padding: 0; }
+
+/* ═══════════ STATE 1 — Search hero ═══════════ */
+.search-hero {
+  position: relative;
+  min-height: 70vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  overflow: hidden; padding: 64px 44px;
+  background: linear-gradient(135deg, #1F1610 0%, #0F0A05 100%);
+}
+.search-hero-img {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(135deg, #2a1f12 0%, #1a130a 100%),
+    repeating-linear-gradient(45deg, transparent 0, transparent 14px, rgba(212,167,106,0.025) 14px, rgba(212,167,106,0.025) 28px);
+  background-blend-mode: overlay;
+}
+.search-hero-img img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: center 50%; opacity: 0.55;
+}
+.search-hero-overlay {
+  position: absolute; inset: 0; z-index: 1;
+  background: radial-gradient(ellipse at center, rgba(15,10,5,0.55) 0%, rgba(15,10,5,0.86) 70%, rgba(15,10,5,0.94) 100%);
+}
+.search-hero-inner { position: relative; z-index: 2; max-width: 820px; width: 100%; text-align: center; }
+.search-scope {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: rgba(212,167,106,0.12);
+  border: 1px solid rgba(212,167,106,0.30);
+  border-radius: var(--r-pill); padding: 7px 18px;
+  font-family: 'Jost', sans-serif;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 26px;
+}
+.search-scope::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 3px rgba(212,167,106,0.2); }
+.search-hero-wordmark {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 60px; font-weight: 700; font-style: italic;
+  color: var(--paper); line-height: 1; letter-spacing: -1.5px; margin-bottom: 14px;
+}
+.search-hero-wordmark em { font-style: italic; color: var(--gold); }
+.search-hero-tagline {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 21px; font-style: italic; font-weight: 500;
+  color: rgba(245,239,228,0.72); letter-spacing: -0.3px; margin-bottom: 46px;
+}
+.search-big-form {
+  display: flex; background: var(--cream);
+  border: 1.5px solid rgba(212,167,106,0.30); border-radius: var(--r-pill);
+  padding: 6px; box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(212,167,106,0.10);
+  max-width: 700px; margin: 0 auto 22px; transition: all 0.2s;
+}
+.search-big-form:focus-within { border-color: rgba(212,167,106,0.55); box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 0 6px rgba(212,167,106,0.18); }
+.search-big-input {
+  flex: 1; min-width: 0; border: none; outline: none; background: transparent;
+  padding: 18px 28px; font-family: 'Jost', sans-serif; font-size: 17px; font-weight: 500;
+  color: var(--ink); letter-spacing: 0.04em;
+}
+.search-big-input::placeholder { color: var(--ink-ghost); font-weight: 400; letter-spacing: 0.02em; }
+.search-big-btn {
+  background: var(--tobacco); color: var(--paper); border: none; border-radius: var(--r-pill);
+  padding: 16px 34px; font-family: 'Jost', sans-serif; font-size: 15px; font-weight: 600;
+  letter-spacing: 0.06em; cursor: pointer; display: inline-flex; align-items: center; gap: 10px;
+  transition: all 0.2s; white-space: nowrap;
+}
+.search-big-btn:hover { background: var(--tobacco-mid); box-shadow: 0 8px 28px rgba(107,76,42,0.5); }
+.search-big-btn::after { content: '→'; font-size: 18px; line-height: 1; }
+.search-hero-hint {
+  font-family: 'Jost', sans-serif; font-size: 12px; color: rgba(245,239,228,0.42);
+  letter-spacing: 0.04em; display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center;
+}
+.search-hero-hint .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); opacity: 0.7; }
+.search-hero-hint .demo {
+  font-family: 'Jost', sans-serif; font-size: 11px; color: rgba(212,167,106,0.85);
+  letter-spacing: 0.06em; border: 1px solid rgba(212,167,106,0.25); border-radius: var(--r-pill);
+  padding: 4px 12px; cursor: pointer; background: none; transition: all 0.15s;
+}
+.search-hero-hint .demo:hover { background: rgba(212,167,106,0.12); color: var(--gold); }
+
+/* ═══════════ STATE 2 — Result ═══════════ */
+.sr-shell { display: none; }
+.sr-shell.show { display: block; }
+.search-hero.hide { display: none; }
+
+/* Result band */
+.sr-band { position: relative; padding: 30px 44px 26px; background: linear-gradient(180deg, #2A1F12 0%, #1F1610 100%); overflow: hidden; }
+.sr-band::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at 82% 50%, rgba(212,167,106,0.08), transparent 60%),
+    repeating-linear-gradient(45deg, transparent 0, transparent 14px, rgba(212,167,106,0.02) 14px, rgba(212,167,106,0.02) 28px);
+}
+.sr-band-inner { position: relative; z-index: 1; max-width: 1140px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+.sr-band-left { display: flex; align-items: center; gap: 20px; }
+.sr-band-icon {
+  width: 52px; height: 52px; border-radius: 14px;
+  background: rgba(212,167,106,0.14); border: 1px solid rgba(212,167,106,0.28);
+  display: flex; align-items: center; justify-content: center; color: var(--gold);
+  font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 700; font-size: 24px; flex-shrink: 0;
+}
+.sr-band-lbl { font-family: 'Jost', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(212,167,106,0.78); margin-bottom: 6px; }
+.sr-band-serial { font-family: 'Jost', sans-serif; font-size: 26px; font-weight: 600; color: var(--paper); letter-spacing: 0.08em; line-height: 1; }
+.sr-band-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sr-mini { display: flex; align-items: center; background: rgba(255,255,255,0.06); border: 1px solid rgba(245,239,228,0.10); border-radius: var(--r-pill); padding: 4px; width: 300px; max-width: 100%; }
+.sr-mini input { flex: 1; min-width: 0; background: transparent; border: none; outline: none; padding: 8px 16px; font-family: 'Jost', sans-serif; font-size: 13px; color: var(--paper); letter-spacing: 0.02em; }
+.sr-mini input::placeholder { color: rgba(245,239,228,0.4); }
+.sr-mini button { background: var(--gold); color: #2A1F12; border: none; border-radius: var(--r-pill); padding: 7px 14px; font-family: 'Jost', sans-serif; font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em; cursor: pointer; }
+.sr-mini button:hover { background: #E0B380; }
+.sr-band-close { font-family: 'Jost', sans-serif; font-size: 12px; color: rgba(245,239,228,0.55); background: none; border: none; padding: 6px 12px; cursor: pointer; letter-spacing: 0.04em; }
+.sr-band-close:hover { color: var(--paper); }
+
+.sr-body { padding: 40px 44px 90px; max-width: 1140px; margin: 0 auto; }
+
+/* Device hero card — photo + specs */
+.device-card {
+  display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 0;
+  background: var(--cream); border: 1px solid var(--paper-deep);
+  border-radius: var(--r-card); overflow: hidden; box-shadow: var(--shadow-md);
+  margin-bottom: 22px;
+}
+.device-photo { position: relative; min-height: 320px; background: linear-gradient(135deg, #2a1f12, #14100a); overflow: hidden; }
+.device-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 60%; }
+.device-photo-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(20,14,8,0.30) 0%, rgba(20,14,8,0.55) 60%, rgba(20,14,8,0.88) 100%);
+  display: flex; flex-direction: column; justify-content: space-between; padding: 26px 28px;
+}
+.device-photo-tag {
+  align-self: flex-start;
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(212,167,106,0.16); border: 1px solid rgba(212,167,106,0.3);
+  border-radius: var(--r-pill); padding: 5px 13px;
+  font-family: 'Jost', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold);
+}
+.device-photo-serial { }
+.device-photo-serial .lbl { font-family: 'Jost', sans-serif; font-size: 9.5px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(212,167,106,0.8); margin-bottom: 6px; }
+.device-photo-serial .val { font-family: 'Jost', sans-serif; font-size: 28px; font-weight: 600; color: var(--paper); letter-spacing: 0.1em; line-height: 1; }
+.device-photo-serial .sub { font-family: 'Jost', sans-serif; font-size: 11px; color: rgba(245,239,228,0.6); margin-top: 8px; }
+
+.device-specs { padding: 30px 34px; }
+.device-specs h3 { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600; color: var(--ink); letter-spacing: -0.3px; line-height: 1.1; }
+.device-specs h3 em { font-style: italic; color: var(--tobacco); }
+.device-specs .desc { font-size: 13px; color: var(--ink-soft); margin-top: 6px; margin-bottom: 24px; }
+.dspec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 28px; }
+.dspec { display: flex; flex-direction: column; gap: 5px; padding-bottom: 14px; border-bottom: 1px dashed var(--paper-warm); }
+.dspec .lbl { font-family: 'Jost', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-ghost); }
+.dspec .val { font-family: 'Cormorant Garamond', serif; font-size: 19px; font-weight: 600; color: var(--ink); letter-spacing: -0.2px; display: flex; align-items: center; gap: 8px; }
+.dspec .val .health-badge { font-family: 'Jost', sans-serif; font-size: 11px; font-weight: 500; }
+
+/* Location chain — horizontal flow */
+.sr-section-label {
+  font-family: 'Jost', sans-serif; font-size: 10px; font-weight: 600;
+  letter-spacing: 0.22em; text-transform: uppercase; color: var(--tobacco);
+  margin: 30px 0 14px; display: flex; align-items: center; gap: 10px;
+}
+.sr-section-label::before { content: ''; width: 24px; height: 1.5px; background: var(--tobacco); }
+.loc-chain {
+  display: flex; align-items: stretch; gap: 0; flex-wrap: wrap;
+  background: var(--cream); border: 1px solid var(--paper-deep); border-radius: var(--r-card);
+  padding: 8px; box-shadow: var(--shadow-sm); margin-bottom: 8px;
+}
+.loc-node {
+  flex: 1; min-width: 130px; position: relative;
+  padding: 16px 16px 16px 22px; display: flex; flex-direction: column; gap: 4px;
+}
+.loc-node:not(:last-child)::after {
+  content: '›'; position: absolute; right: -7px; top: 50%; transform: translateY(-50%);
+  font-family: 'Cormorant Garamond', serif; font-size: 24px; color: var(--ink-ghost); z-index: 2;
+}
+.loc-node .step {
+  font-family: 'Jost', sans-serif; font-size: 9px; font-weight: 600;
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--tobacco);
+  display: flex; align-items: center; gap: 7px;
+}
+.loc-node .step .n {
+  width: 18px; height: 18px; border-radius: 50%; background: var(--tobacco-lt); color: var(--tobacco);
+  display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700;
+}
+.loc-node .val { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; color: var(--ink); line-height: 1.15; letter-spacing: -0.2px; }
+.loc-node .meta { font-family: 'Jost', sans-serif; font-size: 11px; color: var(--ink-soft); }
+.loc-node.student { background: var(--tobacco-lt); border-radius: 14px; }
+.loc-node.student .priv {
+  display: inline-flex; align-items: center; gap: 5px; margin-top: 2px;
+  font-family: 'Jost', sans-serif; font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--health-good);
+}
+.loc-node.student .priv::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--health-good); }
+
+/* History + actions row */
+.sr-lower { display: grid; grid-template-columns: 1fr 320px; gap: 22px; align-items: start; margin-top: 30px; }
+.history-panel { background: var(--cream); border: 1px solid var(--paper-deep); border-radius: var(--r-card); overflow: hidden; box-shadow: var(--shadow-sm); }
+.history-head { display: flex; align-items: baseline; justify-content: space-between; padding: 20px 26px 16px; border-bottom: 1px solid var(--paper-warm); }
+.history-head h3 { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; color: var(--ink); }
+.history-head .all { font-family: 'Jost', sans-serif; font-size: 11px; font-weight: 600; color: var(--tobacco); letter-spacing: 0.04em; }
+.history-list { padding: 6px 26px 14px; }
+.hist-item { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--paper-warm); position: relative; }
+.hist-item:last-child { border-bottom: none; }
+.hist-rail { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+.hist-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+.hist-dot.good    { background: var(--health-good); box-shadow: 0 0 0 3px var(--health-good-lt); }
+.hist-dot.warn    { background: var(--health-warn); box-shadow: 0 0 0 3px var(--health-warn-lt); }
+.hist-dot.bad     { background: var(--health-bad);  box-shadow: 0 0 0 3px var(--health-bad-lt); }
+.hist-dot.tobacco { background: var(--tobacco);     box-shadow: 0 0 0 3px var(--tobacco-lt); }
+.hist-line { width: 2px; flex: 1; background: var(--paper-deep); margin-top: 4px; min-height: 12px; }
+.hist-item:last-child .hist-line { display: none; }
+.hist-body { flex: 1; min-width: 0; padding-bottom: 2px; }
+.hist-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.hist-event { font-family: 'Cormorant Garamond', serif; font-size: 17px; font-weight: 600; color: var(--ink); line-height: 1.25; }
+.hist-event em { font-style: italic; color: var(--tobacco); }
+.hist-date { font-family: 'Jost', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-ghost); white-space: nowrap; }
+.hist-by { font-family: 'Jost', sans-serif; font-size: 12px; color: var(--ink-soft); margin-top: 3px; }
+.hist-kind { display: inline-block; margin-top: 7px; font-family: 'Jost', sans-serif; font-size: 9.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 9px; border-radius: var(--r-pill); }
+.hist-kind.assigned { background: var(--health-good-lt); color: var(--health-good); }
+.hist-kind.returned { background: var(--tobacco-lt); color: var(--tobacco); }
+.hist-kind.flagged  { background: var(--health-bad-lt); color: var(--health-bad); }
+.hist-kind.audit    { background: var(--paper-warm); color: var(--ink-soft); }
+.hist-kind.transfer { background: var(--slate-lt); color: var(--slate); }
+
+/* Action panel */
+.action-panel { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 24px; }
+.action-card { background: var(--cream); border: 1px solid var(--paper-deep); border-radius: var(--r-card); padding: 22px 24px; box-shadow: var(--shadow-sm); }
+.action-card h4 { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; font-style: italic; color: var(--ink); margin-bottom: 4px; }
+.action-card p { font-size: 12px; color: var(--ink-soft); line-height: 1.55; margin-bottom: 16px; }
+.action-btns { display: flex; flex-direction: column; gap: 9px; }
+.act-btn {
+  display: flex; align-items: center; gap: 11px; width: 100%;
+  padding: 12px 16px; border-radius: 12px;
+  font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 500; text-align: left;
+  border: 1.5px solid var(--paper-deep); background: var(--paper); color: var(--ink-mid);
+  cursor: pointer; transition: all 0.15s;
+}
+.act-btn:hover { border-color: var(--tobacco); color: var(--tobacco); transform: translateX(2px); }
+.act-btn .ic {
+  width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 700; font-size: 15px;
+  background: var(--tobacco-lt); color: var(--tobacco);
+}
+.act-btn.flag .ic { background: var(--health-bad-lt); color: var(--health-bad); }
+.act-btn.flag:hover { border-color: var(--health-bad); color: var(--health-bad); }
+.act-btn .sub { display: block; font-size: 10.5px; color: var(--ink-ghost); margin-top: 1px; font-weight: 400; }
+.act-btn:hover .sub { color: inherit; opacity: 0.7; }
+
+.print-card { background: linear-gradient(135deg, var(--tobacco) 0%, var(--tobacco-deep) 100%); border-radius: var(--r-card); padding: 22px 24px; color: var(--paper); }
+.print-card h4 { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; font-style: italic; margin-bottom: 4px; color: var(--paper); }
+.print-card p { font-size: 12px; color: rgba(245,239,228,0.72); line-height: 1.55; margin-bottom: 14px; }
+.print-btn {
+  display: inline-flex; align-items: center; gap: 8px; width: 100%; justify-content: center;
+  background: var(--gold); color: #2A1F12; border: none; border-radius: var(--r-pill);
+  padding: 12px 20px; font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; cursor: pointer; transition: all 0.18s;
+}
+.print-btn:hover { background: #E0B380; transform: translateY(-1px); }
+
+.sr-toast {
+  position: fixed; bottom: 28px; left: 50%; transform: translate(-50%, 20px); z-index: 600;
+  background: var(--ink); color: var(--paper); padding: 13px 22px; border-radius: var(--r-pill);
+  font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 500; box-shadow: var(--shadow-lg);
+  opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1); display: flex; align-items: center; gap: 10px;
+}
+.sr-toast.show { opacity: 1; transform: translate(-50%, 0); }
+.sr-toast::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); }
+
+@media (max-width: 980px) {
+  .device-card { grid-template-columns: 1fr; }
+  .device-photo { min-height: 220px; }
+  .sr-lower { grid-template-columns: 1fr; }
+  .action-panel { position: static; }
+}
+@media (max-width: 860px) {
+  .search-hero { padding: 48px 22px; }
+  .search-hero-wordmark { font-size: 42px; }
+  .search-big-form { flex-direction: column; border-radius: var(--r-card); padding: 8px; }
+  .search-big-btn { width: 100%; justify-content: center; }
+  .sr-body { padding: 30px 22px 70px; }
+  .sr-band { padding: 22px 22px 18px; }
+  .dspec-grid { grid-template-columns: 1fr; }
+  .loc-node:not(:last-child)::after { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═════════ Sidebar ═════════ -->
+<aside class="sidebar">
+  <a href="dewi-assets-board.html" class="sidebar-logo assets-logo" style="text-decoration:none">
+    <div class="word">Dewi<span class="amp"> Assets</span></div>
+    <div class="sub">Board Administration</div>
+  </a>
+
+  <div class="sidebar-board">
+    <div class="lbl">Board</div>
+    <div class="name">Halifax Regional Centre for Education</div>
+    <div class="role">8 schools · 2,352 devices</div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="sidebar-nav-label">District</div>
+    <a class="nav-item" href="dewi-assets-board.html" style="text-decoration:none"><div class="nav-dot"></div>Dashboard</a>
+    <a class="nav-item" href="#" style="text-decoration:none"><div class="nav-dot"></div>Schools<span class="nav-badge badge-paper">8</span></a>
+    <a class="nav-item" href="dewi-assets-fleet.html" style="text-decoration:none"><div class="nav-dot"></div>Fleet Health</a>
+    <a class="nav-item active" href="dewi-assets-search.html" style="text-decoration:none"><div class="nav-dot"></div>Device Search</a>
+    <a class="nav-item" href="dewi-assets-reports.html" style="text-decoration:none"><div class="nav-dot"></div>Reports</a>
+    <a class="nav-item" href="dewi-assets-settings.html" style="text-decoration:none"><div class="nav-dot"></div>Settings</a>
+  </nav>
+
+  <div class="sidebar-user">
+    <div class="avi">R</div>
+    <div class="info">
+      <div class="name">R. MacIntyre</div>
+      <div class="role">District Technology Coordinator</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ═════════ Main ═════════ -->
+<main class="main">
+  <div class="content">
+
+    <!-- ════════ STATE 1 — SEARCH HERO ════════ -->
+    <section class="search-hero" id="search-hero">
+      <div class="search-hero-img">
+        <!-- PHOTO: Macro of Chromebook serial number label and barcode on brushed plastic -->
+        <img src="images/chromebook-serial-macro.png" alt="Chromebook serial label" onerror="this.style.display='none'">
+      </div>
+      <div class="search-hero-overlay"></div>
+
+      <div class="search-hero-inner">
+        <div class="search-scope">Searching across all schools in the board</div>
+        <h1 class="search-hero-wordmark">Find <em>any</em> device.</h1>
+        <p class="search-hero-tagline">One serial number. Eight schools. Zero guesswork.</p>
+
+        <form class="search-big-form" onsubmit="event.preventDefault();runSearch();">
+          <input class="search-big-input" id="serial-input" type="text"
+            placeholder="Type or scan a serial number — e.g. CH549L21B300078"
+            autocomplete="off" autofocus>
+          <button class="search-big-btn" type="submit">Find device</button>
+        </form>
+
+        <div class="search-hero-hint">
+          <span class="dot"></span>
+          <span>USB scanner ready · or paste from the device label</span>
+          <button class="demo" type="button" onclick="demoSearch('CH549L21B300078')">Try a sample serial</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ STATE 2 — RESULT ════════ -->
+    <div class="sr-shell" id="sr-shell">
+
+      <div class="sr-band">
+        <div class="sr-band-inner">
+          <div class="sr-band-left">
+            <div class="sr-band-icon">✓</div>
+            <div>
+              <div class="sr-band-lbl">Located · 1 match across the board</div>
+              <div class="sr-band-serial" id="result-serial">CH549L21B300078</div>
+            </div>
+          </div>
+          <div class="sr-band-actions">
+            <div class="sr-mini">
+              <input type="text" id="mini-input" placeholder="Scan another…" onkeydown="if(event.key==='Enter') runMiniSearch()">
+              <button onclick="runMiniSearch()">Find</button>
+            </div>
+            <button class="sr-band-close" onclick="resetSearch()">← New search</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sr-body">
+
+        <!-- Device hero card -->
+        <div class="device-card">
+          <div class="device-photo">
+            <!-- PHOTO: Macro of Chromebook serial label -->
+            <img src="images/chromebook-serial-macro.png" alt="Device serial label" onerror="this.style.display='none'">
+            <div class="device-photo-overlay">
+              <div class="device-photo-tag">Asset · RHC-CB-1184</div>
+              <div class="device-photo-serial">
+                <div class="lbl">Serial number</div>
+                <div class="val">CH549L21B300078</div>
+                <div class="sub">Verified at scan · Cape Mira High</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="device-specs">
+            <h3>HP Chromebook 11 <em>G9 EE</em></h3>
+            <div class="desc">11.6" · 4 GB RAM · 32 GB eMMC · Intel Celeron N4500 · Non-touch</div>
+
+            <div class="dspec-grid">
+              <div class="dspec">
+                <div class="lbl">Manufacturer</div>
+                <div class="val">HP</div>
+              </div>
+              <div class="dspec">
+                <div class="lbl">Type</div>
+                <div class="val">Chromebook</div>
+              </div>
+              <div class="dspec">
+                <div class="lbl">Manufacture year</div>
+                <div class="val">2021</div>
+              </div>
+              <div class="dspec">
+                <div class="lbl">Age</div>
+                <div class="val"><span class="health-badge health-warn">5 years</span></div>
+              </div>
+              <div class="dspec">
+                <div class="lbl">Auto Update Expiry</div>
+                <div class="val"><span class="health-badge health-warn">Mar 2027</span></div>
+              </div>
+              <div class="dspec">
+                <div class="lbl">Condition</div>
+                <div class="val" style="color:var(--health-good);">Good</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Location chain -->
+        <div class="sr-section-label">Location chain</div>
+        <div class="loc-chain">
+          <div class="loc-node">
+            <div class="step"><span class="n">1</span>Board</div>
+            <div class="val">HRCE</div>
+            <div class="meta">Halifax Regional</div>
+          </div>
+          <div class="loc-node">
+            <div class="step"><span class="n">2</span>School</div>
+            <div class="val">Cape Mira High</div>
+            <div class="meta">Halifax · 880 students</div>
+          </div>
+          <div class="loc-node">
+            <div class="step"><span class="n">3</span>Room</div>
+            <div class="val">Room 214</div>
+            <div class="meta">Stored end-of-day</div>
+          </div>
+          <div class="loc-node">
+            <div class="step"><span class="n">4</span>Cart</div>
+            <div class="val">Cart 02</div>
+            <div class="meta">Grade 10 English</div>
+          </div>
+          <div class="loc-node">
+            <div class="step"><span class="n">5</span>Slot</div>
+            <div class="val">Slot 17</div>
+            <div class="meta">Top row · port 17</div>
+          </div>
+          <div class="loc-node student">
+            <div class="step"><span class="n">6</span>Student</div>
+            <div class="val">a.okonkwo</div>
+            <div class="priv">Username only</div>
+          </div>
+        </div>
+
+        <!-- History + actions -->
+        <div class="sr-lower">
+
+          <div class="history-panel">
+            <div class="history-head">
+              <h3 style="font-style:italic;">Recent activity</h3>
+              <a class="all" href="#">Full history →</a>
+            </div>
+            <div class="history-list">
+
+              <div class="hist-item">
+                <div class="hist-rail"><div class="hist-dot good"></div><div class="hist-line"></div></div>
+                <div class="hist-body">
+                  <div class="hist-top">
+                    <div class="hist-event">Assigned to <em>a.okonkwo</em></div>
+                    <div class="hist-date">08 Sep 2025</div>
+                  </div>
+                  <div class="hist-by">Class 10-3 homeroom · logged by Mr. Delaney</div>
+                  <span class="hist-kind assigned">Assigned</span>
+                </div>
+              </div>
+
+              <div class="hist-item">
+                <div class="hist-rail"><div class="hist-dot warn"></div><div class="hist-line"></div></div>
+                <div class="hist-body">
+                  <div class="hist-top">
+                    <div class="hist-event">Returned for keyboard check</div>
+                    <div class="hist-date">21 Nov 2025</div>
+                  </div>
+                  <div class="hist-by">Sticky spacebar · reissued same day · IT desk</div>
+                  <span class="hist-kind returned">Returned</span>
+                </div>
+              </div>
+
+              <div class="hist-item">
+                <div class="hist-rail"><div class="hist-dot tobacco"></div><div class="hist-line"></div></div>
+                <div class="hist-body">
+                  <div class="hist-top">
+                    <div class="hist-event">Confirmed in slot 17</div>
+                    <div class="hist-date">14 Apr 2026</div>
+                  </div>
+                  <div class="hist-by">Spring audit · condition held at Good · R. MacIntyre</div>
+                  <span class="hist-kind audit">Audit</span>
+                </div>
+              </div>
+
+              <div class="hist-item">
+                <div class="hist-rail"><div class="hist-dot good"></div><div class="hist-line"></div></div>
+                <div class="hist-body">
+                  <div class="hist-top">
+                    <div class="hist-event">Re-assigned to <em>a.okonkwo</em></div>
+                    <div class="hist-date">28 Apr 2026</div>
+                  </div>
+                  <div class="hist-by">Returned from spring break loan pool · Cart 02</div>
+                  <span class="hist-kind assigned">Assigned</span>
+                </div>
+              </div>
+
+              <div class="hist-item">
+                <div class="hist-rail"><div class="hist-dot tobacco"></div></div>
+                <div class="hist-body">
+                  <div class="hist-top">
+                    <div class="hist-event">Scanned by board search</div>
+                    <div class="hist-date">10 Jun 2026</div>
+                  </div>
+                  <div class="hist-by">Cross-board lookup · R. MacIntyre, District Technology</div>
+                  <span class="hist-kind audit">Scan</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="action-panel">
+            <div class="action-card">
+              <h4>Take action</h4>
+              <p>Board-level controls for this device. Changes sync to Cape Mira High instantly.</p>
+              <div class="action-btns">
+                <button class="act-btn flag" onclick="toast('Device flagged for review at Cape Mira High')">
+                  <span class="ic">!</span>
+                  <span>Flag device<span class="sub">Mark for IT review</span></span>
+                </button>
+                <button class="act-btn" onclick="toast('Transfer started — choose a destination school')">
+                  <span class="ic">⇄</span>
+                  <span>Transfer to another school<span class="sub">Move between schools in the board</span></span>
+                </button>
+              </div>
+            </div>
+
+            <div class="print-card">
+              <h4>Print asset label</h4>
+              <p>Generate a fresh serial + QR sticker for this device, ready for the label printer.</p>
+              <button class="print-btn" onclick="toast('Sending label to print queue…')">⎙ Print label</button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<div class="sr-toast" id="sr-toast"></div>
+
+<script src="dewi-assets-core.js"></script>
+<script>
+const C = AssetsCore;
+let SCOPE_SCHOOLS = [];
+
+function runSearch() {
+  const v = (document.getElementById('serial-input').value || '').trim();
+  if (!v) return;
+  showResult(v);
+}
+function runMiniSearch() {
+  const v = (document.getElementById('mini-input').value || '').trim();
+  if (!v) return;
+  showResult(v);
+  document.getElementById('mini-input').value = '';
+}
+function demoSearch(serial) {
+  document.getElementById('serial-input').value = serial;
+  showResult(serial);
+}
+
+async function showResult(serial) {
+  document.getElementById('search-hero').classList.add('hide');
+  document.getElementById('sr-shell').classList.add('show');
+  document.getElementById('result-serial').textContent = serial.toUpperCase();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  const results = await C.searchSerial(serial, SCOPE_SCHOOLS);
+  const body = document.querySelector('#sr-shell .sr-result-body') || document.querySelector('#sr-shell');
+  if (!results.length) {
+    toast('No device found matching "' + serial + '"');
+    return;
+  }
+  // Render first result details in existing markup (the search page has similar chain layout)
+  const r = results[0];
+  const a = r.asset, cart = r.cart, studs = r.students;
+  const n = C.noteObj(a);
+  const chain = document.querySelector('#sr-shell .sr-chain');
+  if (chain) {
+    const nodes = chain.querySelectorAll('.sr-chain-node');
+    if (nodes[0]) nodes[0].querySelector('.sr-chain-val').textContent = cart ? cart.school : '—';
+    if (nodes[1]) nodes[1].querySelector('.sr-chain-val').textContent = cart ? 'Cart ' + String(cart.cart_number||'').padStart(2,'0') + (cart.cart_name ? ' · ' + cart.cart_name : '') : '—';
+    if (nodes[2]) nodes[2].querySelector('.sr-chain-val').textContent = cart && cart.room_number ? 'Room ' + cart.room_number : '—';
+    if (nodes[3]) nodes[3].querySelector('.sr-chain-val').textContent = a.slot_number != null ? 'Slot ' + String(a.slot_number).padStart(2,'0') : '—';
+    if (nodes[4]) nodes[4].querySelector('.sr-chain-val').textContent = studs.length ? studs.map(s => s.username).join(', ') : 'Unassigned';
+  }
+}
+
+function resetSearch() {
+  document.getElementById('search-hero').classList.remove('hide');
+  document.getElementById('sr-shell').classList.remove('show');
+  const i = document.getElementById('serial-input');
+  i.value = ''; i.focus();
+}
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('sr-toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+AssetsCore.boot({
+  allow: ['board', 'school'],
+  onReady: function (ctx) {
+    SCOPE_SCHOOLS = ctx.scope.schools;
+    const qs = new URLSearchParams(location.search).get('serial');
+    if (qs) {
+      document.getElementById('serial-input').value = qs;
+      showResult(qs);
+    }
+  }
+});
+</script>
+
+</body>
+</html>

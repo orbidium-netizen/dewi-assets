@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Find a device — Dewi Assets</title>
+<link rel="stylesheet" href="dewi.css">
+<link rel="stylesheet" href="dewi-assets.css">
+
+<script>
+let db = null;
+function initSupabase() {
+  try {
+    const { createClient } = supabase;
+    db = createClient(
+      'https://ivdkipygpasvowigarfb.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2ZGtpcHlncGFzdm93aWdhcmZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMzA2NzcsImV4cCI6MjA5MjcwNjY3N30.qKN6tCqyyIIVoPAVl1o2_2gtUkfBh2aBWDP_sIDcxgE'
+    );
+  } catch(e) { console.error('Supabase init failed:', e.message); }
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="initSupabase()"></script>
+
+<style>
+/* ── Sidebar shared ── */
+.sidebar { background: #2A1F12; box-shadow: 4px 0 32px rgba(42, 31, 18, 0.30); }
+.sidebar-logo { padding: 28px 24px 20px; }
+.assets-logo .word { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 700; font-style: italic; color: var(--paper); line-height: 1; letter-spacing: -0.5px; }
+.assets-logo .word .amp { color: #D4A76A; }
+.assets-logo .sub { font-family: 'Jost', sans-serif; font-size: 9.5px; font-weight: 600; letter-spacing: 0.26em; text-transform: uppercase; color: rgba(245, 239, 228, 0.42); margin-top: 8px; }
+.sidebar-school { margin: 16px 14px 0; padding: 12px 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; }
+.sidebar-school .lbl { font-size: 9px; font-weight: 600; letter-spacing: 0.20em; text-transform: uppercase; color: rgba(245,239,228,0.4); margin-bottom: 4px; }
+.sidebar-school .name { font-family: 'Cormorant Garamond', serif; font-size: 16px; font-weight: 600; color: var(--paper); line-height: 1.2; }
+.sidebar-school .role { font-size: 11px; color: rgba(245,239,228,0.55); margin-top: 2px; }
+.sidebar .nav-item.active { background: rgba(212, 167, 106, 0.12); color: var(--paper); }
+.sidebar .nav-item.active .nav-dot { background: #D4A76A !important; box-shadow: 0 0 0 3px rgba(212, 167, 106, 0.22) !important; }
+.sidebar .nav-item.active::before { background: #D4A76A !important; }
+.sidebar-user { margin: 0 14px 16px; padding: 12px 14px; background: rgba(0,0,0,0.18); border-radius: 12px; display: flex; align-items: center; gap: 10px; }
+.sidebar-user .avi { width: 32px; height: 32px; border-radius: 50%; background: #D4A76A; color: #2A1F12; display: flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+.sidebar-user .name { font-size: 12px; font-weight: 600; color: var(--paper); }
+.sidebar-user .role { font-size: 10px; color: rgba(245,239,228,0.5); }
+.sidebar-nav .nav-item:last-child { margin-top: 0; padding-top: 11px; border-top: none; }
+
+/* No topbar on this page — make it feel like a centrepiece */
+.main { background: var(--paper); }
+.content { padding: 0; }
+
+/* ═══════════ STATE 1 — Empty hero ═══════════ */
+.scan-hero {
+  position: relative;
+  min-height: 62vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1F1610 0%, #0F0A05 100%);
+  padding: 64px 44px;
+}
+.scan-hero-img {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(135deg, #2a1f12 0%, #1a130a 100%),
+    repeating-linear-gradient(45deg,
+      transparent 0, transparent 14px,
+      rgba(212,167,106,0.025) 14px, rgba(212,167,106,0.025) 28px);
+  background-blend-mode: overlay;
+}
+.scan-hero-img img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center 50%;
+  opacity: 0.7;
+}
+.scan-hero-img::after {
+  content: 'Photo · chromebook-serial-macro.png';
+  position: absolute; bottom: 22px; right: 24px;
+  font-family: 'Jost', sans-serif;
+  font-size: 9px; font-weight: 600;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: rgba(212, 167, 106, 0.40);
+  border: 1px dashed rgba(212, 167, 106, 0.22);
+  border-radius: var(--r-pill);
+  padding: 5px 14px;
+}
+.scan-hero-overlay {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse at center, rgba(15,10,5,0.55) 0%, rgba(15,10,5,0.85) 70%, rgba(15,10,5,0.94) 100%);
+  z-index: 1;
+}
+.scan-hero-inner {
+  position: relative; z-index: 2;
+  max-width: 780px; width: 100%;
+  text-align: center;
+}
+.scan-hero-eyebrow {
+  font-family: 'Jost', sans-serif;
+  font-size: 10.5px; font-weight: 600;
+  letter-spacing: 0.32em; text-transform: uppercase;
+  color: #D4A76A;
+  margin-bottom: 22px;
+  display: inline-flex; align-items: center; gap: 14px;
+}
+.scan-hero-eyebrow::before, .scan-hero-eyebrow::after {
+  content: ''; width: 32px; height: 1.5px; background: rgba(212, 167, 106, 0.5);
+}
+.scan-hero-wordmark {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 64px; font-weight: 700; font-style: italic;
+  color: var(--paper); line-height: 1;
+  letter-spacing: -1.5px;
+  margin-bottom: 14px;
+}
+.scan-hero-wordmark .amp { color: #D4A76A; }
+.scan-hero-tagline {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px; font-style: italic;
+  font-weight: 500;
+  color: rgba(245, 239, 228, 0.72);
+  letter-spacing: -0.3px;
+  margin-bottom: 48px;
+}
+
+.scan-big-form {
+  display: flex;
+  background: var(--cream);
+  border: 1.5px solid rgba(212, 167, 106, 0.30);
+  border-radius: var(--r-pill);
+  padding: 6px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(212, 167, 106, 0.10);
+  max-width: 680px;
+  margin: 0 auto 22px;
+  transition: all 0.2s;
+}
+.scan-big-form:focus-within {
+  border-color: rgba(212, 167, 106, 0.55);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.4),
+    0 0 0 6px rgba(212, 167, 106, 0.18);
+}
+.scan-big-input {
+  flex: 1; min-width: 0;
+  border: none; outline: none;
+  background: transparent;
+  padding: 18px 28px;
+  font-family: 'Jost', sans-serif;
+  font-size: 17px; font-weight: 500;
+  color: var(--ink);
+  letter-spacing: 0.04em;
+}
+.scan-big-input::placeholder { color: var(--ink-ghost); font-weight: 400; letter-spacing: 0.02em; }
+.scan-big-btn {
+  background: var(--tobacco);
+  color: var(--paper);
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 16px 34px;
+  font-family: 'Jost', sans-serif;
+  font-size: 15px; font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  display: inline-flex; align-items: center; gap: 10px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.scan-big-btn:hover {
+  background: var(--tobacco-mid);
+  box-shadow: 0 8px 28px rgba(107, 76, 42, 0.5);
+}
+.scan-big-btn::after { content: '→'; font-size: 18px; line-height: 1; }
+
+.scan-hero-hint {
+  font-family: 'Jost', sans-serif;
+  font-size: 12px;
+  color: rgba(245, 239, 228, 0.42);
+  letter-spacing: 0.04em;
+  display: inline-flex; align-items: center; gap: 10px;
+}
+.scan-hero-hint .dot { width: 6px; height: 6px; border-radius: 50%; background: #D4A76A; opacity: 0.7; }
+.scan-hero-hint .demo {
+  font-family: 'Jost', sans-serif;
+  font-size: 11px;
+  color: rgba(212, 167, 106, 0.7);
+  letter-spacing: 0.08em;
+  border: 1px solid rgba(212, 167, 106, 0.2);
+  border-radius: var(--r-pill);
+  padding: 3px 10px;
+  cursor: pointer;
+  background: none;
+  transition: all 0.15s;
+}
+.scan-hero-hint .demo:hover { background: rgba(212, 167, 106, 0.1); color: #D4A76A; }
+
+/* ═══ "What you'll see" preview cards ═══ */
+.preview-strip {
+  background: var(--paper);
+  padding: 56px 44px 64px;
+}
+.preview-strip-eyebrow {
+  text-align: center;
+  font-family: 'Jost', sans-serif;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.30em; text-transform: uppercase;
+  color: var(--tobacco);
+  margin-bottom: 14px;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+}
+.preview-strip-eyebrow::before, .preview-strip-eyebrow::after {
+  content: ''; width: 28px; height: 1.5px; background: var(--tobacco); opacity: 0.5;
+}
+.preview-strip-title {
+  text-align: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 30px; font-weight: 600; color: var(--ink);
+  letter-spacing: -0.4px;
+  margin-bottom: 6px;
+}
+.preview-strip-title em { font-style: italic; color: var(--tobacco); }
+.preview-strip-sub {
+  text-align: center;
+  font-size: 14px; color: var(--ink-soft);
+  max-width: 560px; margin: 0 auto 36px;
+  line-height: 1.65;
+}
+.preview-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+.preview-card {
+  background: var(--cream);
+  border: 1px solid var(--paper-deep);
+  border-radius: var(--r-card);
+  padding: 28px 26px;
+  position: relative;
+  overflow: hidden;
+}
+.preview-card-step {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic; font-weight: 700;
+  font-size: 36px; color: var(--tobacco);
+  line-height: 1;
+  margin-bottom: 16px;
+  opacity: 0.4;
+}
+.preview-card-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: var(--tobacco-lt);
+  color: var(--tobacco);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px; font-weight: 700; font-style: italic;
+  margin-bottom: 18px;
+}
+.preview-card h4 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 19px; font-weight: 600;
+  color: var(--ink); line-height: 1.25;
+  margin-bottom: 8px;
+}
+.preview-card h4 em { font-style: italic; color: var(--tobacco); }
+.preview-card p { font-size: 13px; color: var(--ink-soft); line-height: 1.65; }
+
+/* ═══════════ STATE 2 — Result ═══════════ */
+.result-shell { display: none; }
+.result-shell.show { display: block; }
+.empty-shell.hide { display: none !important; }
+
+/* Collapsed result header — narrower band */
+.result-band {
+  position: relative;
+  padding: 36px 44px 28px;
+  background: linear-gradient(180deg, #2A1F12 0%, #1F1610 100%);
+  overflow: hidden;
+}
+.result-band::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 80% 50%, rgba(212,167,106,0.08), transparent 60%),
+    repeating-linear-gradient(45deg, transparent 0, transparent 14px, rgba(212,167,106,0.02) 14px, rgba(212,167,106,0.02) 28px);
+}
+.result-band-inner {
+  position: relative; z-index: 1;
+  max-width: 1100px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 24px; flex-wrap: wrap;
+}
+.result-band-left {
+  display: flex; align-items: center; gap: 22px;
+}
+.result-band-icon {
+  width: 56px; height: 56px;
+  border-radius: 14px;
+  background: rgba(212, 167, 106, 0.14);
+  border: 1px solid rgba(212, 167, 106, 0.28);
+  display: flex; align-items: center; justify-content: center;
+  color: #D4A76A;
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic; font-weight: 700; font-size: 26px;
+  flex-shrink: 0;
+}
+.result-band-meta { min-width: 0; }
+.result-band-lbl {
+  font-family: 'Jost', sans-serif;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.24em; text-transform: uppercase;
+  color: rgba(212, 167, 106, 0.78);
+  margin-bottom: 6px;
+}
+.result-band-serial {
+  font-family: 'Jost', sans-serif;
+  font-size: 30px; font-weight: 600;
+  color: var(--paper);
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+.result-band-actions {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.result-mini-scan {
+  display: flex; align-items: center;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(245,239,228,0.10);
+  border-radius: var(--r-pill);
+  padding: 4px;
+  width: 320px; max-width: 100%;
+}
+.result-mini-scan input {
+  flex: 1; min-width: 0;
+  background: transparent; border: none; outline: none;
+  padding: 8px 16px;
+  font-family: 'Jost', sans-serif;
+  font-size: 13px; color: var(--paper);
+  letter-spacing: 0.02em;
+}
+.result-mini-scan input::placeholder { color: rgba(245,239,228,0.4); }
+.result-mini-scan button {
+  background: #D4A76A; color: #2A1F12;
+  border: none; border-radius: var(--r-pill);
+  padding: 7px 14px;
+  font-family: 'Jost', sans-serif;
+  font-size: 11.5px; font-weight: 600;
+  letter-spacing: 0.04em; cursor: pointer;
+  white-space: nowrap;
+}
+.result-mini-scan button:hover { background: #E0B380; }
+.result-band-close {
+  font-family: 'Jost', sans-serif;
+  font-size: 12px;
+  color: rgba(245,239,228,0.55);
+  background: none; border: none;
+  padding: 6px 12px; cursor: pointer;
+  letter-spacing: 0.04em;
+}
+.result-band-close:hover { color: var(--paper); }
+
+/* ═══ Chain of custody ═══ */
+.result-body {
+  padding: 56px 44px 80px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.result-section-head {
+  text-align: center; margin-bottom: 44px;
+}
+.result-section-head .eyebrow {
+  font-family: 'Jost', sans-serif;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.28em; text-transform: uppercase;
+  color: var(--tobacco);
+  margin-bottom: 10px;
+  display: inline-flex; align-items: center; gap: 10px;
+}
+.result-section-head .eyebrow::before, .result-section-head .eyebrow::after {
+  content: ''; width: 22px; height: 1.5px; background: var(--tobacco); opacity: 0.5;
+}
+.result-section-head h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 38px; font-weight: 600;
+  color: var(--ink); line-height: 1.1;
+  letter-spacing: -0.4px;
+}
+.result-section-head h2 em { font-style: italic; color: var(--tobacco); }
+
+.chain {
+  max-width: 720px;
+  margin: 0 auto 56px;
+  position: relative;
+}
+.chain::before {
+  content: '';
+  position: absolute;
+  left: 31px; top: 24px; bottom: 24px;
+  width: 2px;
+  background: linear-gradient(180deg, var(--tobacco) 0%, var(--tobacco-mid) 50%, var(--tobacco-deep) 100%);
+  border-radius: 2px;
+}
+.chain-node {
+  display: flex; align-items: flex-start;
+  gap: 22px;
+  padding: 14px 0;
+  position: relative;
+}
+.chain-node:first-child { padding-top: 0; }
+.chain-node:last-child { padding-bottom: 0; }
+.chain-bullet {
+  width: 64px; height: 64px;
+  border-radius: 18px;
+  background: var(--cream);
+  border: 2px solid var(--tobacco);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--tobacco);
+  flex-shrink: 0;
+  position: relative; z-index: 1;
+  box-shadow: 0 4px 16px var(--tobacco-glow);
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic; font-weight: 700;
+  font-size: 26px;
+}
+.chain-bullet .num {
+  position: absolute; top: -8px; right: -8px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--tobacco); color: var(--paper);
+  font-family: 'Jost', sans-serif;
+  font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  letter-spacing: 0;
+}
+.chain-content {
+  flex: 1; min-width: 0;
+  background: var(--cream);
+  border: 1px solid var(--paper-deep);
+  border-radius: var(--r-card);
+  padding: 18px 22px;
+  box-shadow: var(--shadow-sm);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap;
+}
+.chain-content:hover {
+  border-color: var(--tobacco);
+  box-shadow: 0 4px 16px var(--tobacco-glow);
+}
+.chain-label {
+  font-family: 'Jost', sans-serif;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--tobacco);
+  margin-bottom: 4px;
+}
+.chain-value {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px; font-weight: 600;
+  color: var(--ink); line-height: 1.1;
+  letter-spacing: -0.2px;
+}
+.chain-value em { font-style: italic; color: var(--tobacco); }
+.chain-meta {
+  font-size: 12px; color: var(--ink-soft);
+  margin-top: 4px;
+}
+.chain-aside {
+  display: flex; flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.chain-aside .lbl {
+  font-size: 9px; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink-ghost);
+}
+.chain-aside .val {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 15px; font-weight: 600;
+  color: var(--ink);
+}
+
+/* ═══ Device details panel ═══ */
+.device-detail {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 18px;
+  margin-top: 12px;
+}
+.device-spec {
+  background: var(--cream);
+  border: 1px solid var(--paper-deep);
+  border-radius: var(--r-card);
+  padding: 28px 32px;
+  box-shadow: var(--shadow-sm);
+}
+.device-spec h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px; font-weight: 600;
+  color: var(--ink); margin-bottom: 6px;
+  letter-spacing: -0.3px;
+}
+.device-spec h3 em { font-style: italic; color: var(--tobacco); }
+.device-spec .model {
+  font-size: 13px; color: var(--ink-soft);
+  margin-bottom: 22px;
+}
+.spec-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 28px;
+}
+.spec-row {
+  display: flex; flex-direction: column; gap: 4px;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed var(--paper-warm);
+}
+.spec-row .lbl {
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink-ghost);
+}
+.spec-row .val {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px; font-weight: 600;
+  color: var(--ink); letter-spacing: -0.2px;
+  display: flex; align-items: center; gap: 8px;
+}
+.spec-row .val .health-badge {
+  font-family: 'Jost', sans-serif; font-size: 11px;
+  font-weight: 500; letter-spacing: 0.02em;
+}
+
+/* Condition log */
+.cond-log {
+  background: var(--cream);
+  border: 1px solid var(--paper-deep);
+  border-radius: var(--r-card);
+  padding: 28px 30px;
+  box-shadow: var(--shadow-sm);
+}
+.cond-log-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 18px;
+}
+.cond-log-head h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 19px; font-weight: 600; color: var(--ink);
+}
+.cond-log-head .all {
+  font-family: 'Jost', sans-serif;
+  font-size: 11px; font-weight: 600;
+  color: var(--tobacco);
+  letter-spacing: 0.04em;
+}
+.log-item {
+  display: flex; gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--paper-warm);
+  position: relative;
+}
+.log-item:last-child { border-bottom: none; padding-bottom: 0; }
+.log-item:first-child { padding-top: 4px; }
+.log-dot {
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  flex-shrink: 0; margin-top: 4px;
+}
+.log-dot.good    { background: var(--health-good); box-shadow: 0 0 0 3px var(--health-good-lt); }
+.log-dot.warn    { background: var(--health-warn); box-shadow: 0 0 0 3px var(--health-warn-lt); }
+.log-dot.tobacco { background: var(--tobacco);     box-shadow: 0 0 0 3px var(--tobacco-lt); }
+.log-body { flex: 1; min-width: 0; }
+.log-date {
+  font-family: 'Jost', sans-serif;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink-ghost);
+  margin-bottom: 3px;
+}
+.log-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 16px; font-weight: 600;
+  color: var(--ink); line-height: 1.3;
+}
+.log-by {
+  font-size: 12px; color: var(--ink-soft); margin-top: 2px;
+}
+
+/* Footer actions after the result */
+.result-foot {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--paper-deep);
+  display: flex; gap: 12px; align-items: center;
+  flex-wrap: wrap;
+}
+.result-foot-btn {
+  font-family: 'Jost', sans-serif;
+  font-size: 13px; font-weight: 500;
+  padding: 10px 20px;
+  border-radius: var(--r-pill);
+  border: 1.5px solid var(--paper-deep);
+  background: var(--cream);
+  color: var(--ink-mid);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.result-foot-btn:hover { border-color: var(--tobacco); color: var(--tobacco); }
+.result-foot-btn.tobacco {
+  background: var(--tobacco); color: var(--paper);
+  border-color: var(--tobacco);
+}
+.result-foot-btn.tobacco:hover { background: var(--tobacco-mid); }
+
+/* ═══ Not in system state ═══ */
+.notfound-card { display: none; }
+.notfound-card.show { display: block; }
+.chain-shell { display: block; }
+.chain-shell.hide { display: none; }
+
+.notfound-card {
+  max-width: 720px; margin: 0 auto 32px;
+  background: linear-gradient(135deg, var(--must-lt) 0%, #FBF2DC 100%);
+  border: 1.5px solid rgba(139, 105, 20, 0.28);
+  border-radius: var(--r-card);
+  padding: 36px 40px;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+}
+.notfound-icon {
+  width: 56px; height: 56px;
+  border-radius: 16px;
+  background: var(--mustard);
+  color: var(--paper);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic; font-weight: 700;
+  font-size: 28px;
+  margin-bottom: 18px;
+  box-shadow: 0 6px 22px rgba(139, 105, 20, 0.28);
+}
+.notfound-card h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px; font-weight: 600;
+  color: var(--ink); line-height: 1.2;
+  margin-bottom: 8px;
+  letter-spacing: -0.3px;
+}
+.notfound-card h3 em { font-style: italic; color: var(--mustard); }
+.notfound-card p {
+  font-size: 14px; color: var(--ink-soft);
+  line-height: 1.65; max-width: 480px;
+  margin: 0 auto 22px;
+}
+.notfound-serial {
+  display: inline-block;
+  font-family: 'Jost', sans-serif;
+  font-size: 18px; font-weight: 600;
+  color: var(--ink);
+  letter-spacing: 0.08em;
+  background: var(--cream);
+  border: 1px solid rgba(139, 105, 20, 0.25);
+  border-radius: var(--r-pill);
+  padding: 8px 24px;
+  margin: 4px 0 22px;
+}
+.notfound-actions {
+  display: flex; gap: 10px;
+  justify-content: center; flex-wrap: wrap;
+}
+.notfound-btn-primary {
+  background: var(--mustard); color: var(--paper);
+  border: none; border-radius: var(--r-pill);
+  padding: 12px 24px;
+  font-family: 'Jost', sans-serif;
+  font-size: 13px; font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px;
+  box-shadow: 0 4px 16px rgba(139, 105, 20, 0.30);
+  transition: all 0.2s;
+}
+.notfound-btn-primary:hover {
+  background: #A07C1A;
+  transform: translateY(-1px);
+}
+.notfound-btn-primary::after { content: '→'; font-size: 14px; }
+.notfound-btn-secondary {
+  background: transparent; color: var(--ink-mid);
+  border: 1.5px solid rgba(139, 105, 20, 0.28);
+  border-radius: var(--r-pill);
+  padding: 12px 24px;
+  font-family: 'Jost', sans-serif;
+  font-size: 13px; font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.notfound-btn-secondary:hover { background: var(--cream); }
+
+/* Mobile */
+@media (max-width: 860px) {
+  .scan-hero { padding: 48px 22px; min-height: auto; }
+  .scan-hero-wordmark { font-size: 44px; }
+  .scan-hero-tagline { font-size: 17px; margin-bottom: 30px; }
+  .scan-big-form { flex-direction: column; border-radius: var(--r-card); padding: 8px; }
+  .scan-big-btn { width: 100%; justify-content: center; }
+  .preview-strip { padding: 44px 22px; }
+  .preview-cards { grid-template-columns: 1fr; }
+  .result-band { padding: 24px 22px 20px; }
+  .result-body { padding: 36px 22px 56px; }
+  .result-section-head h2 { font-size: 28px; }
+  .device-detail { grid-template-columns: 1fr; }
+  .spec-grid { grid-template-columns: 1fr; }
+  .chain-bullet { width: 52px; height: 52px; font-size: 22px; }
+  .chain::before { left: 25px; }
+}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <a href="dewi-assets-dashboard.html" class="sidebar-logo assets-logo" style="text-decoration:none">
+    <div class="word">Dewi<span class="amp"> Assets</span></div>
+    <div class="sub">Administration</div>
+  </a>
+  <div class="sidebar-school">
+    <div class="lbl">Signed in to</div>
+    <div class="name">Riverside Junior High</div>
+    <div class="role">Halifax · 412 students</div>
+  </div>
+  <nav class="sidebar-nav">
+    <a class="nav-item" href="dewi-assets-dashboard.html" style="text-decoration:none"><div class="nav-dot"></div>Dashboard</a>
+    <a class="nav-item" href="dewi-assets-cart.html" style="text-decoration:none"><div class="nav-dot"></div>Carts<span class="nav-badge badge-paper">8</span></a>
+    <a class="nav-item active" href="dewi-assets-scan.html" style="text-decoration:none"><div class="nav-dot"></div>Devices</a>
+    <a class="nav-item" href="#" style="text-decoration:none"><div class="nav-dot"></div>Reports</a>
+    <a class="nav-item" href="#" style="text-decoration:none"><div class="nav-dot"></div>Settings</a>
+  </nav>
+  <div class="sidebar-user">
+    <div class="avi">M</div>
+    <div>
+      <div class="name">M. Chen</div>
+      <div class="role">Vice-Principal</div>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="content">
+
+    <!-- ════════ STATE 1 — EMPTY ════════
+         (Hidden by default — State 2 is the primary/featured view
+          per the spec; click "Back to scan" in State 2 to see this.) -->
+    <div class="empty-shell hide" id="empty-shell">
+
+      <section class="scan-hero">
+        <div class="scan-hero-img">
+          <!-- PHOTO: Close-up macro photograph of the bottom of a Chromebook laptop showing serial number label and barcode sticker on grey brushed plastic, sharp focus, clean studio lighting, horizontal format -->
+          <img src="images/chromebook-serial-macro.png" alt="Chromebook serial label" onerror="this.style.display='none'">
+        </div>
+        <div class="scan-hero-overlay"></div>
+
+        <div class="scan-hero-inner">
+          <div class="scan-hero-eyebrow">Find any device · in any cart</div>
+          <h1 class="scan-hero-wordmark">Dewi<span class="amp"> Assets</span></h1>
+          <p class="scan-hero-tagline">Every device has a story.</p>
+
+          <form class="scan-big-form" onsubmit="event.preventDefault();runScan();">
+            <input class="scan-big-input" id="serial-input" type="text"
+              placeholder="Type or scan a serial number — e.g. 5CD3147XYZ"
+              autocomplete="off" autofocus>
+            <button class="scan-big-btn" type="submit">Find device</button>
+          </form>
+
+          <div class="scan-hero-hint">
+            <span class="dot"></span>
+            <span>USB scanner ready · or paste from the device label</span>
+            <button class="demo" type="button" onclick="demoScan('5CD3147XYZ')">Try a sample serial</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="preview-strip">
+        <div class="preview-strip-eyebrow">What you'll see</div>
+        <h2 class="preview-strip-title">One scan tells you <em>the whole story.</em></h2>
+        <p class="preview-strip-sub">No spreadsheets, no calling around. The serial on the bottom of any device is enough.</p>
+
+        <div class="preview-cards">
+
+          <div class="preview-card">
+            <div class="preview-card-step">i.</div>
+            <div class="preview-card-icon">⌂</div>
+            <h4>Where it <em>lives</em></h4>
+            <p>School, cart, and slot. So you know exactly where to walk if you have to bring it home.</p>
+          </div>
+
+          <div class="preview-card">
+            <div class="preview-card-step">ii.</div>
+            <div class="preview-card-icon">◐</div>
+            <h4>Who has <em>it now</em></h4>
+            <p>Anonymous student username and the class roster. Privacy-preserving by design.</p>
+          </div>
+
+          <div class="preview-card">
+            <div class="preview-card-step">iii.</div>
+            <div class="preview-card-icon">~</div>
+            <h4>Its full <em>history</em></h4>
+            <p>Purchase year, Auto Update Expiry, condition log — every check-in since day one.</p>
+          </div>
+
+        </div>
+      </section>
+
+    </div><!-- /empty-shell -->
+
+
+    <!-- ════════ STATE 2 — RESULT ════════
+         Primary featured view — loads with the chain-of-custody result visible. -->
+    <div class="result-shell show" id="result-shell">
+
+      <!-- Collapsed result header -->
+      <div class="result-band">
+        <div class="result-band-inner">
+          <div class="result-band-left">
+            <div class="result-band-icon">✓</div>
+            <div class="result-band-meta">
+              <div class="result-band-lbl">Serial scanned · 1 match</div>
+              <div class="result-band-serial" id="scanned-serial">5CD3147XYZ</div>
+            </div>
+          </div>
+          <div class="result-band-actions">
+            <div class="result-mini-scan">
+              <input type="text" placeholder="Scan another…" id="mini-serial-input"
+                onkeydown="if(event.key==='Enter') runMiniScan()">
+              <button onclick="runMiniScan()">Find</button>
+            </div>
+            <button class="result-band-close" onclick="resetScan()">← Back to scan</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="result-body">
+
+        <!-- ═══ FOUND chain ═══ -->
+        <div class="chain-shell" id="chain-shell">
+
+          <div class="result-section-head">
+            <div class="eyebrow">Chain of custody</div>
+            <h2>Riverside Junior High · <em>Cart 01 · Slot 05</em></h2>
+          </div>
+
+          <div class="chain">
+
+            <div class="chain-node">
+              <div class="chain-bullet">⌂<span class="num">1</span></div>
+              <div class="chain-content">
+                <div>
+                  <div class="chain-label">School</div>
+                  <div class="chain-value">Riverside Junior High</div>
+                  <div class="chain-meta">Halifax Regional Centre for Education</div>
+                </div>
+                <div class="chain-aside">
+                  <div class="lbl">Devices in school</div>
+                  <div class="val">248</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="chain-node">
+              <div class="chain-bullet">▤<span class="num">2</span></div>
+              <div class="chain-content">
+                <div>
+                  <div class="chain-label">Cart</div>
+                  <div class="chain-value">Cart 01 · <em>Grade 7 Cart</em></div>
+                  <div class="chain-meta">8 carts at this school</div>
+                </div>
+                <div class="chain-aside">
+                  <div class="lbl">Total devices</div>
+                  <div class="val">30</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="chain-node">
+              <div class="chain-bullet">◰<span class="num">3</span></div>
+              <div class="chain-content">
+                <div>
+                  <div class="chain-label">Classroom</div>
+                  <div class="chain-value">Room 204</div>
+                  <div class="chain-meta">Stored end-of-day · shared by 7-1, 7-2, 7-3</div>
+                </div>
+                <div class="chain-aside">
+                  <div class="lbl">Classes using</div>
+                  <div class="val">3</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="chain-node">
+              <div class="chain-bullet">#<span class="num">4</span></div>
+              <div class="chain-content">
+                <div>
+                  <div class="chain-label">Slot</div>
+                  <div class="chain-value">Slot 05</div>
+                  <div class="chain-meta">Charging port 5 · top row</div>
+                </div>
+                <div class="chain-aside">
+                  <div class="lbl">Cart position</div>
+                  <div class="val">05 of 30</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="chain-node">
+              <div class="chain-bullet">◐<span class="num">5</span></div>
+              <div class="chain-content">
+                <div>
+                  <div class="chain-label">Assigned student</div>
+                  <div class="chain-value">sofia.tremblay</div>
+                  <div class="chain-meta">Class 7-2 · since 6 September 2025</div>
+                </div>
+                <div class="chain-aside">
+                  <div class="lbl">Anonymous</div>
+                  <div class="val" style="color:var(--health-good);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;font-family:'Jost',sans-serif;font-weight:600;">Username only</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ═══ Device details ═══ -->
+          <div class="result-section-head" style="margin-top: 12px; margin-bottom: 28px;">
+            <div class="eyebrow">Device details</div>
+            <h2>The hardware, <em>up close.</em></h2>
+          </div>
+
+          <div class="device-detail">
+
+            <div class="device-spec">
+              <h3>HP Chromebook 11 <em>G8</em></h3>
+              <div class="model">11.6" · 4 GB RAM · 32 GB eMMC · Intel Celeron N4020 · Touchscreen</div>
+
+              <div class="spec-grid">
+                <div class="spec-row">
+                  <div class="lbl">Type</div>
+                  <div class="val">Chromebook</div>
+                </div>
+                <div class="spec-row">
+                  <div class="lbl">Manufacture year</div>
+                  <div class="val">2022</div>
+                </div>
+                <div class="spec-row">
+                  <div class="lbl">Age</div>
+                  <div class="val"><span class="health-badge health-warn">3.5 years</span></div>
+                </div>
+                <div class="spec-row">
+                  <div class="lbl">Auto Update Expiry</div>
+                  <div class="val"><span class="health-badge health-warn">Mar 2027</span></div>
+                </div>
+                <div class="spec-row">
+                  <div class="lbl">Current condition</div>
+                  <div class="val" style="color:var(--forest);">Good</div>
+                </div>
+                <div class="spec-row">
+                  <div class="lbl">Purchased</div>
+                  <div class="val">Aug 2022</div>
+                </div>
+                <div class="spec-row" style="border-bottom: none; padding-bottom: 0;">
+                  <div class="lbl">Asset tag</div>
+                  <div class="val" style="font-family:'Jost',sans-serif;font-size:14px;letter-spacing:0.06em;">RJH-CB-0247</div>
+                </div>
+                <div class="spec-row" style="border-bottom: none; padding-bottom: 0;">
+                  <div class="lbl">Warranty</div>
+                  <div class="val" style="color:var(--ink-soft);font-size:14px;">Expired Aug 2024</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="cond-log">
+              <div class="cond-log-head">
+                <h3 style="font-style:italic;">Condition log</h3>
+                <a class="all" href="#">View all 8 entries →</a>
+              </div>
+
+              <div class="log-item">
+                <div class="log-dot good"></div>
+                <div class="log-body">
+                  <div class="log-date">06 Sep 2025 · check-in</div>
+                  <div class="log-title">Assigned to <strong style="color:var(--tobacco);">sofia.tremblay</strong> · Excellent condition</div>
+                  <div class="log-by">Logged by Ms. Robidoux · 7-2 homeroom</div>
+                </div>
+              </div>
+
+              <div class="log-item">
+                <div class="log-dot warn"></div>
+                <div class="log-body">
+                  <div class="log-date">14 Nov 2025 · incident</div>
+                  <div class="log-title">Small scratch on lid · cosmetic only</div>
+                  <div class="log-by">Self-reported by student · downgraded to Good</div>
+                </div>
+              </div>
+
+              <div class="log-item">
+                <div class="log-dot tobacco"></div>
+                <div class="log-body">
+                  <div class="log-date">14 Apr 2026 · audit</div>
+                  <div class="log-title">Confirmed in slot 05 · condition still Good</div>
+                  <div class="log-by">Spring audit · M. Chen, Vice-Principal</div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          <div class="result-foot">
+            <button class="result-foot-btn tobacco">View full device record →</button>
+            <button class="result-foot-btn">Update condition</button>
+            <button class="result-foot-btn">Reassign</button>
+            <button class="result-foot-btn">Print sticker</button>
+            <button class="result-foot-btn" style="margin-left:auto;color:var(--health-bad);border-color:var(--health-bad-lt);">Mark as lost</button>
+          </div>
+
+        </div>
+
+        <!-- ═══ NOT FOUND state ═══ -->
+        <div class="notfound-card" id="notfound-card">
+          <div class="notfound-icon">?</div>
+          <h3>This one's <em>not in the system yet.</em></h3>
+          <div class="notfound-serial" id="nf-serial">UNKNOWN-SN</div>
+          <p>No problem — register it on the spot. A few quick questions about the cart and slot, and Dewi Assets will know it forever.</p>
+          <div class="notfound-actions">
+            <button class="notfound-btn-primary" onclick="window.location.href='dewi-assets-cart.html'">Add to system</button>
+            <button class="notfound-btn-secondary" onclick="resetScan()">Try another serial</button>
+          </div>
+          <div style="margin-top:22px;padding-top:18px;border-top:1px dashed rgba(139,105,20,0.25);font-size:11.5px;color:var(--ink-soft);max-width:480px;margin-left:auto;margin-right:auto;line-height:1.6;">
+            Possible reasons: device arrived after the last sync, was bought directly (not through district), or the label hasn't been scanned in yet. Spare loaners are a common case.
+          </div>
+        </div>
+
+      </div><!-- /result-body -->
+    </div><!-- /result-shell -->
+
+  </div>
+</main>
+
+<script src="dewi-assets-core.js"></script>
+<script>
+const C = AssetsCore;
+let SCOPE_SCHOOLS = [];
+
+function runScan() {
+  const v = (document.getElementById('serial-input').value || '').trim();
+  if (!v) return;
+  showResult(v);
+}
+function runMiniScan() {
+  const v = (document.getElementById('mini-serial-input').value || '').trim();
+  if (!v) return;
+  showResult(v);
+  document.getElementById('mini-serial-input').value = '';
+}
+function demoScan(serial) {
+  document.getElementById('serial-input').value = serial;
+  showResult(serial);
+}
+
+async function showResult(serial) {
+  document.getElementById('empty-shell').classList.add('hide');
+  document.getElementById('result-shell').classList.add('show');
+  document.getElementById('scanned-serial').textContent = serial.toUpperCase();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Real search
+  const results = await C.searchSerial(serial, SCOPE_SCHOOLS);
+  if (results.length) {
+    const r = results[0];
+    document.getElementById('chain-shell').classList.remove('hide');
+    document.getElementById('notfound-card').classList.remove('show');
+    renderChain(r);
+  } else {
+    document.getElementById('chain-shell').classList.add('hide');
+    document.getElementById('notfound-card').classList.add('show');
+    document.getElementById('nf-serial').textContent = serial.toUpperCase();
+  }
+}
+
+function renderChain(r) {
+  const a = r.asset, cart = r.cart, studs = r.students;
+  const n = C.noteObj(a);
+  const type = C.detectDeviceType(a.model);
+  const ageYears = C.deviceAgeYears(a);
+  const st = C.aueStatus(n.aue);
+  const cond = (n.condition || 'good');
+  const condCap = cond.charAt(0).toUpperCase() + cond.slice(1);
+
+  // Chain heading
+  const headEl = document.querySelector('#chain-shell .result-section-head h2');
+  if (headEl) headEl.innerHTML = C.esc(cart ? cart.school : '—') + ' · <em>' +
+    (cart ? 'Cart ' + String(cart.cart_number||'').padStart(2,'0') : '—') +
+    (a.slot_number != null ? ' · Slot ' + String(a.slot_number).padStart(2,'0') : '') + '</em>';
+
+  // Chain nodes
+  const nodes = document.querySelectorAll('#chain-shell .chain-node');
+  // Node 1: School
+  if (nodes[0]) {
+    nodes[0].querySelector('.chain-value').textContent = cart ? cart.school : '—';
+    nodes[0].querySelector('.chain-meta').textContent = '—';
+  }
+  // Node 2: Cart
+  if (nodes[1]) {
+    nodes[1].querySelector('.chain-value').innerHTML = cart
+      ? 'Cart ' + String(cart.cart_number||'').padStart(2,'0') + ' · <em>' + C.esc(cart.cart_name || '') + '</em>'
+      : '—';
+    nodes[1].querySelector('.chain-meta').textContent = cart ? (cart.shared_classes || '') : '';
+  }
+  // Node 3: Classroom
+  if (nodes[2]) {
+    nodes[2].querySelector('.chain-value').textContent = cart && cart.room_number ? 'Room ' + cart.room_number : '—';
+    nodes[2].querySelector('.chain-meta').textContent = cart && cart.shared_classes ? 'Shared by ' + cart.shared_classes : '';
+  }
+  // Node 4: Slot
+  if (nodes[3]) {
+    nodes[3].querySelector('.chain-value').textContent = a.slot_number != null ? 'Slot ' + String(a.slot_number).padStart(2,'0') : '—';
+  }
+  // Node 5: Student
+  if (nodes[4]) {
+    nodes[4].querySelector('.chain-value').textContent = studs.length ? studs.map(s => s.username).join(', ') : 'Unassigned';
+    const metaEl = nodes[4].querySelector('.chain-meta');
+    if (metaEl) metaEl.textContent = studs.length ? '' : 'No student linked to this slot';
+  }
+
+  // Device details
+  const specTitle = document.querySelector('#chain-shell .device-spec h3');
+  if (specTitle) specTitle.innerHTML = C.esc(a.manufacturer || '') + ' ' + C.esc(a.model || '—');
+  const specRows = document.querySelectorAll('#chain-shell .spec-row');
+  const specVals = [type, a.purchase_year || '—',
+    ageYears != null ? ageYears.toFixed(1) + ' years' : '—',
+    C.aueLabel(a) || '—', condCap, '', ''];
+  specRows.forEach((row, i) => {
+    const val = row.querySelector('.val');
+    if (val && specVals[i] !== undefined) {
+      if (i === 2) val.innerHTML = '<span class="health-badge ' + (ageYears<=2?'health-good':ageYears<=4?'health-warn':'health-bad') + '">' + C.esc(specVals[i]) + '</span>';
+      else if (i === 3) val.innerHTML = '<span class="health-badge ' + st.cls + '">' + C.esc(specVals[i]) + '</span>';
+      else val.textContent = specVals[i];
+    }
+  });
+}
+
+function resetScan() {
+  document.getElementById('empty-shell').classList.remove('hide');
+  document.getElementById('result-shell').classList.remove('show');
+  document.getElementById('serial-input').value = '';
+  document.getElementById('serial-input').focus();
+}
+
+AssetsCore.boot({
+  allow: ['school', 'board'],
+  onReady: function (ctx) {
+    SCOPE_SCHOOLS = ctx.scope.schools;
+    // If ?serial= param, auto-scan
+    const qs = new URLSearchParams(location.search).get('serial');
+    if (qs) {
+      document.getElementById('serial-input').value = qs;
+      showResult(qs);
+    }
+  }
+});
+</script>
+
+</body>
+</html>

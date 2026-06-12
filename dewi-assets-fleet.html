@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fleet Health — Dewi Assets</title>
+<meta name="description" content="Board-wide device fleet health: Auto Update Expiry timeline and full filterable device table.">
+<link rel="stylesheet" href="dewi.css">
+<link rel="stylesheet" href="dewi-assets.css">
+<link rel="stylesheet" href="dewi-board.css">
+
+<script>
+let db = null;
+function initSupabase() {
+  try {
+    const { createClient } = supabase;
+    db = createClient(
+      'https://ivdkipygpasvowigarfb.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2ZGtpcHlncGFzdm93aWdhcmZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMzA2NzcsImV4cCI6MjA5MjcwNjY3N30.qKN6tCqyyIIVoPAVl1o2_2gtUkfBh2aBWDP_sIDcxgE'
+    );
+  } catch(e) { console.error('Supabase init failed:', e.message); }
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="initSupabase()"></script>
+</head>
+<body>
+
+<!-- ═════════ Sidebar ═════════ -->
+<aside class="sidebar">
+  <a href="dewi-assets-board.html" class="sidebar-logo assets-logo" style="text-decoration:none">
+    <div class="word">Dewi<span class="amp"> Assets</span></div>
+    <div class="sub">Board Administration</div>
+  </a>
+
+  <div class="sidebar-board">
+    <div class="lbl">Board</div>
+    <div class="name">Halifax Regional Centre for Education</div>
+    <div class="role">8 schools · 2,352 devices</div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="sidebar-nav-label">District</div>
+    <a class="nav-item" href="dewi-assets-board.html" style="text-decoration:none"><div class="nav-dot"></div>Dashboard</a>
+    <a class="nav-item" href="#" style="text-decoration:none"><div class="nav-dot"></div>Schools<span class="nav-badge badge-paper">8</span></a>
+    <a class="nav-item active" href="dewi-assets-fleet.html" style="text-decoration:none"><div class="nav-dot"></div>Fleet Health</a>
+    <a class="nav-item" href="dewi-assets-search.html" style="text-decoration:none"><div class="nav-dot"></div>Device Search</a>
+    <a class="nav-item" href="dewi-assets-reports.html" style="text-decoration:none"><div class="nav-dot"></div>Reports</a>
+    <a class="nav-item" href="dewi-assets-settings.html" style="text-decoration:none"><div class="nav-dot"></div>Settings</a>
+  </nav>
+
+  <div class="sidebar-user">
+    <div class="avi">R</div>
+    <div class="info">
+      <div class="name">R. MacIntyre</div>
+      <div class="role">District Technology Coordinator</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ═════════ Main ═════════ -->
+<main class="main">
+
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" style="font-style:italic;">Fleet Health</div>
+      <div style="font-family:'Jost',sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-ghost);margin-top:2px">2,352 devices · 8 schools · AUE 2025–2031</div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-stat">Replacement budget window <strong style="color:var(--tobacco);">FY27</strong></div>
+      <a class="btn btn-secondary btn-sm" href="dewi-assets-board.html" style="text-decoration:none">← Board</a>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Page header -->
+    <div class="page-head">
+      <div>
+        <div class="eyebrow">Board · Fleet Health</div>
+        <h1>When the fleet <em>runs out of road.</em></h1>
+        <p class="sub">Every device loses software support at its Auto Update Expiry. This is the whole board's runway — plan replacements before a year turns red.</p>
+      </div>
+    </div>
+
+    <!-- ═══ AUE TIMELINE ═══ -->
+    <section class="timeline-card">
+      <div class="timeline-head">
+        <div>
+          <h3>Auto Update Expiry <em>timeline</em></h3>
+          <div class="sub">Devices grouped by the year support ends. Bar height is device count.</div>
+        </div>
+        <div class="timeline-legend">
+          <span class="tl-legend-item"><span class="sw bad"></span>Expired / this year</span>
+          <span class="tl-legend-item"><span class="sw warn"></span>Within 24 months</span>
+          <span class="tl-legend-item"><span class="sw good"></span>Healthy runway</span>
+        </div>
+      </div>
+
+      <div class="timeline-bars">
+        <div class="tl-col">
+          <div class="tl-bar-num">88</div>
+          <div class="tl-bar bad" style="height: 17%"></div>
+          <div class="tl-foot"><div class="yr">2025</div><div class="tag bad">Expired</div></div>
+        </div>
+        <div class="tl-col">
+          <div class="tl-bar-num">142</div>
+          <div class="tl-bar bad" style="height: 27%"></div>
+          <div class="tl-foot"><div class="yr">2026</div><div class="tag bad">This year</div></div>
+        </div>
+        <div class="tl-col">
+          <div class="tl-bar-num">310</div>
+          <div class="tl-bar warn" style="height: 59%"></div>
+          <div class="tl-foot"><div class="yr">2027</div><div class="tag warn">12 mo</div></div>
+        </div>
+        <div class="tl-col">
+          <div class="tl-bar-num">486</div>
+          <div class="tl-bar warn" style="height: 93%"></div>
+          <div class="tl-foot"><div class="yr">2028</div><div class="tag warn">24 mo</div></div>
+        </div>
+        <div class="tl-col">
+          <div class="tl-bar-num">524</div>
+          <div class="tl-bar good" style="height: 100%"></div>
+          <div class="tl-foot"><div class="yr">2029</div><div class="tag good">Healthy</div></div>
+        </div>
+        <div class="tl-col">
+          <div class="tl-bar-num">412</div>
+          <div class="tl-bar good" style="height: 79%"></div>
+          <div class="tl-foot"><div class="yr">2030</div><div class="tag good">Healthy</div></div>
+        </div>
+        <div class="tl-col">
+          <div class="tl-bar-num">390</div>
+          <div class="tl-bar good" style="height: 74%"></div>
+          <div class="tl-foot"><div class="yr">2031</div><div class="tag good">Healthy</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ FILTERABLE DEVICE TABLE ═══ -->
+    <div class="fleet-toolbar">
+      <div class="fleet-filter-group">
+        <span class="fleet-filter-label">School</span>
+        <select class="fleet-select" id="f-school">
+          <option value="all">All schools</option>
+          <option>Cape Mira High</option>
+          <option>Pinehaven Elementary</option>
+          <option>Harbourview High</option>
+          <option>Birchwood Elementary</option>
+          <option>Seaview Academy</option>
+          <option>Riverside Junior High</option>
+          <option>Maplewood Junior High</option>
+          <option>Fundy Shore Consolidated</option>
+        </select>
+      </div>
+      <div class="fleet-filter-group">
+        <span class="fleet-filter-label">AUE year</span>
+        <select class="fleet-select" id="f-year">
+          <option value="all">All years</option>
+          <option>2025</option>
+          <option>2026</option>
+          <option>2027</option>
+          <option>2028</option>
+          <option>2029</option>
+          <option>2030</option>
+          <option>2031</option>
+        </select>
+      </div>
+      <div class="fleet-filter-group">
+        <span class="fleet-filter-label">Type</span>
+        <select class="fleet-select" id="f-type">
+          <option value="all">All types</option>
+          <option>Chromebook</option>
+          <option>iPad</option>
+          <option>Laptop</option>
+        </select>
+      </div>
+      <div class="fleet-search">
+        <span style="color:var(--ink-ghost);font-size:13px;">⌕</span>
+        <input type="text" id="f-search" placeholder="Search serial or model…">
+      </div>
+      <button class="fleet-export" id="export-btn"><span class="ic">↓</span> Export CSV</button>
+    </div>
+
+    <div class="fleet-table-wrap">
+      <div class="fleet-table-head">
+        <h3 style="font-style:italic;">Board device register</h3>
+        <div class="shown">Showing <strong id="shown-count">18</strong> of <strong>2,352</strong> devices</div>
+      </div>
+      <div class="fleet-scroll">
+        <table class="fleet-table" id="fleet-table">
+          <thead>
+            <tr>
+              <th>School</th>
+              <th>Cart</th>
+              <th>Serial</th>
+              <th>Model</th>
+              <th>Type</th>
+              <th class="num">Mfr Yr</th>
+              <th class="num">Age</th>
+              <th>AUE</th>
+              <th>Condition</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="fleet-body">
+            <!-- rows injected by JS -->
+          </tbody>
+        </table>
+        <div class="fleet-empty" id="fleet-empty">
+          <div class="ic">∅</div>
+          <div>No devices match these filters.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="board-foot">
+      <div class="meta">
+        <span>© 2026 Dewi · Anchored Development Co</span>
+        <span class="sep">·</span>
+        <a href="#">Privacy</a>
+        <span class="sep">·</span>
+        <a href="#">FERPA / PIPEDA</a>
+      </div>
+      <div class="status">All systems operational</div>
+    </footer>
+
+  </div>
+</main>
+
+<!-- Floating scan button -->
+<a class="scan-fab" href="dewi-assets-search.html">
+  <span class="glyph">⌖</span>
+  <span>Find any device<span class="sub">Search across the board</span></span>
+</a>
+
+<script src="dewi-assets-core.js"></script>
+<script>
+const C = AssetsCore;
+let DEVICES = [];
+let ALL_SCHOOLS = [];
+
+const NOW = new Date().getFullYear();
+const condLabel = { excellent:'Excellent', good:'Good', fair:'Fair', poor:'Poor', damaged:'Damaged', broken:'Broken' };
+const statusLabel = { in:'In service', flagged:'Flagged', spare:'Spare' };
+const typeClass = { 'Chromebook':'cb', 'iPad':'ipad', 'Laptop':'laptop', 'MacBook':'laptop', 'Surface':'laptop', 'Device':'other' };
+
+function aueClass(year) {
+  if (year <= NOW) return 'bad';
+  if (year <= NOW + 2) return 'warn';
+  return 'good';
+}
+function aueText(d) {
+  if (!d.aueYear) return '—';
+  if (d.aueYear < NOW) return 'Expired ' + d.aueYear;
+  if (d.aueYear === NOW) return d.aueYear;
+  return d.aueYear;
+}
+
+function render() {
+  const fSchool = document.getElementById('f-school').value;
+  const fYear   = document.getElementById('f-year').value;
+  const fType   = document.getElementById('f-type').value;
+  const q       = document.getElementById('f-search').value.trim().toLowerCase();
+
+  const rows = DEVICES.filter(d =>
+    (fSchool === 'all' || d.school === fSchool) &&
+    (fYear === 'all' || String(d.aueYear) === fYear) &&
+    (fType === 'all' || d.type === fType) &&
+    (!q || d.serial.toLowerCase().includes(q) || d.model.toLowerCase().includes(q))
+  );
+
+  const body = document.getElementById('fleet-body');
+  body.innerHTML = rows.map(d => `
+    <tr>
+      <td class="school">${C.esc(d.school)}</td>
+      <td>Cart ${C.esc(d.cart)}</td>
+      <td class="serial">${C.esc(d.serial)}</td>
+      <td>${C.esc(d.model)}</td>
+      <td><span class="fleet-type ${typeClass[d.type] || 'other'}">${C.esc(d.type)}</span></td>
+      <td class="num">${d.mfr || '—'}</td>
+      <td class="num">${d.age != null ? d.age.toFixed(0) + ' yr' : '—'}</td>
+      <td><span class="aue-tag ${d.aueYear ? aueClass(d.aueYear) : ''}">${aueText(d)}</span></td>
+      <td><span class="cond-pill ${d.cond}">${condLabel[d.cond] || d.cond}</span></td>
+      <td><span class="status-dot ${d.status}">${statusLabel[d.status] || d.status}</span></td>
+    </tr>
+  `).join('');
+
+  document.getElementById('shown-count').textContent = rows.length;
+  document.getElementById('fleet-empty').classList.toggle('show', rows.length === 0);
+}
+
+['f-school','f-year','f-type'].forEach(id => document.getElementById(id).addEventListener('change', render));
+document.getElementById('f-search').addEventListener('input', render);
+
+document.getElementById('export-btn').addEventListener('click', () => {
+  const fSchool = document.getElementById('f-school').value;
+  const fYear   = document.getElementById('f-year').value;
+  const fType   = document.getElementById('f-type').value;
+  const q       = document.getElementById('f-search').value.trim().toLowerCase();
+  const rows = DEVICES.filter(d =>
+    (fSchool === 'all' || d.school === fSchool) &&
+    (fYear === 'all' || String(d.aueYear) === fYear) &&
+    (fType === 'all' || d.type === fType) &&
+    (!q || d.serial.toLowerCase().includes(q) || d.model.toLowerCase().includes(q))
+  );
+  const head = ['School','Cart','Serial','Model','Type','Mfr Year','Age','AUE Year','Condition','Status'];
+  C.downloadCSV('dewi-fleet-health.csv', head, rows.map(d =>
+    [d.school, 'Cart '+d.cart, d.serial, d.model, d.type, d.mfr, (d.age!=null?d.age.toFixed(0)+' yr':''), d.aueYear||'', condLabel[d.cond]||d.cond, statusLabel[d.status]||d.status]
+  ));
+});
+
+function populateFilters() {
+  const sel = document.getElementById('f-school');
+  sel.innerHTML = '<option value="all">All schools</option>' +
+    ALL_SCHOOLS.map(s => '<option value="' + C.esc(s) + '">' + C.esc(s) + '</option>').join('');
+  // AUE years
+  const years = [...new Set(DEVICES.map(d => d.aueYear).filter(Boolean))].sort();
+  const ySel = document.getElementById('f-year');
+  ySel.innerHTML = '<option value="all">All AUE years</option>' +
+    years.map(y => '<option value="' + y + '">' + y + '</option>').join('');
+  // Types
+  const types = [...new Set(DEVICES.map(d => d.type))].sort();
+  const tSel = document.getElementById('f-type');
+  tSel.innerHTML = '<option value="all">All types</option>' +
+    types.map(t => '<option value="' + C.esc(t) + '">' + C.esc(t) + '</option>').join('');
+}
+
+AssetsCore.boot({
+  allow: ['board', 'school'],
+  onReady: async function (ctx) {
+    ALL_SCHOOLS = ctx.scope.schools;
+    const inv = await C.loadInventory(ALL_SCHOOLS);
+    const cartsById = {};
+    inv.carts.forEach(c => { cartsById[c.id] = c; });
+
+    DEVICES = inv.assets.map(a => {
+      const cart = cartsById[a.cart_id];
+      const n = C.noteObj(a);
+      const type = C.detectDeviceType(a.model);
+      const cond = (n.condition || 'good').toLowerCase();
+      const aueY = C.aueYear(a);
+      const age = C.deviceAgeYears(a);
+      const flagged = C.isFlagged(a);
+      return {
+        school: cart ? cart.school : '—',
+        cart: cart ? String(cart.cart_number||'').padStart(2,'0') : '—',
+        serial: a.serial_number || '—',
+        model: a.model || '—',
+        type: type,
+        mfr: a.purchase_year || null,
+        age: age,
+        aueYear: aueY,
+        cond: cond,
+        status: flagged ? 'flagged' : 'in'
+      };
+    });
+    populateFilters();
+    render();
+  }
+});
+</script>
+
+</body>
+</html>

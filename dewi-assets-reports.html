@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reports — Dewi Assets</title>
+<meta name="description" content="Generate board-level reports for budget meetings, procurement, and annual reporting.">
+<link rel="stylesheet" href="dewi.css">
+<link rel="stylesheet" href="dewi-assets.css">
+<link rel="stylesheet" href="dewi-board.css">
+
+<script>
+let db = null;
+function initSupabase() {
+  try {
+    const { createClient } = supabase;
+    db = createClient(
+      'https://ivdkipygpasvowigarfb.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2ZGtpcHlncGFzdm93aWdhcmZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMzA2NzcsImV4cCI6MjA5MjcwNjY3N30.qKN6tCqyyIIVoPAVl1o2_2gtUkfBh2aBWDP_sIDcxgE'
+    );
+  } catch(e) { console.error('Supabase init failed:', e.message); }
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="initSupabase()"></script>
+
+<style>
+/* ═══ Reports section scaffolding ═══ */
+.rep-section { margin-bottom: 40px; }
+.rep-section-head {
+  display: flex; align-items: baseline; gap: 12px;
+  margin-bottom: 18px; padding-bottom: 12px;
+  border-bottom: 1px solid var(--paper-deep);
+}
+.rep-section-head .ix {
+  font-family: 'Cormorant Garamond', serif; font-style: italic;
+  font-size: 20px; font-weight: 700; color: var(--tobacco); line-height: 1;
+}
+.rep-section-head h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 24px; font-weight: 600; color: var(--ink); letter-spacing: -0.3px;
+}
+.rep-section-head .note { margin-left: auto; font-size: 12px; color: var(--ink-soft); }
+
+/* ─ Scheduled report cards ─ */
+.rep-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+.rep-card {
+  position: relative; overflow: hidden;
+  background: var(--cream); border: 1px solid var(--paper-deep);
+  border-radius: var(--r-card); padding: 26px 28px 22px 32px;
+  box-shadow: var(--shadow-sm); transition: all 0.2s;
+  display: flex; flex-direction: column;
+}
+.rep-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--tobacco); }
+.rep-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.rep-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 12px; }
+.rep-card-doc {
+  width: 40px; height: 50px; flex-shrink: 0; border-radius: 5px;
+  background: linear-gradient(160deg, var(--tobacco-lt) 0%, #EADBC6 100%);
+  border: 1px solid rgba(107,76,42,0.2);
+  position: relative; box-shadow: var(--shadow-xs);
+}
+.rep-card-doc::after {
+  content: ''; position: absolute; top: 0; right: 0;
+  border-width: 0 13px 13px 0; border-style: solid;
+  border-color: transparent var(--cream) transparent transparent;
+}
+.rep-card-doc .lines { position: absolute; left: 7px; right: 7px; top: 14px; display: flex; flex-direction: column; gap: 4px; }
+.rep-card-doc .lines i { height: 2px; background: rgba(107,76,42,0.28); border-radius: 2px; display: block; }
+.rep-card-doc .lines i:nth-child(2) { width: 70%; }
+.rep-card-doc .lines i:nth-child(4) { width: 55%; }
+.rep-card h3 { font-family: 'Cormorant Garamond', serif; font-size: 21px; font-weight: 600; color: var(--ink); line-height: 1.15; letter-spacing: -0.3px; margin-bottom: 8px; }
+.rep-card .desc { font-size: 13px; color: var(--ink-mid); line-height: 1.6; margin-bottom: 6px; }
+.rep-card .use { font-size: 12px; color: var(--ink-soft); line-height: 1.55; font-style: italic; }
+.rep-card-foot {
+  margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--paper-warm);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+}
+.rep-gen-btn {
+  display: inline-flex; align-items: center; gap: 9px;
+  background: var(--tobacco); color: var(--paper); border: none; border-radius: var(--r-pill);
+  padding: 10px 20px; font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.03em;
+  cursor: pointer; transition: all 0.18s; box-shadow: 0 3px 14px var(--tobacco-glow);
+}
+.rep-gen-btn:hover { background: var(--tobacco-mid); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(107,76,42,0.24); }
+.rep-gen-btn .ic { font-size: 14px; }
+.rep-last { font-family: 'Jost', sans-serif; font-size: 11px; color: var(--ink-ghost); text-align: right; }
+.rep-last .t { display: block; font-weight: 500; color: var(--ink-soft); }
+.rep-last.empty {
+  font-style: italic; color: var(--tobacco);
+  background: var(--tobacco-lt); border: 1px solid rgba(107,76,42,0.16);
+  border-radius: var(--r-pill); padding: 7px 14px; text-align: left;
+}
+.rep-last.empty .t { font-weight: 600; color: var(--tobacco); font-style: normal; }
+
+/* ─ Raw data export rows ─ */
+.export-list { background: var(--cream); border: 1px solid var(--paper-deep); border-radius: var(--r-card); overflow: hidden; box-shadow: var(--shadow-sm); }
+.export-row { display: flex; align-items: center; gap: 16px; padding: 18px 24px; border-bottom: 1px solid var(--paper-warm); transition: background 0.14s; }
+.export-row:last-child { border-bottom: none; }
+.export-row:hover { background: var(--paper); }
+.export-icon {
+  width: 38px; height: 38px; flex-shrink: 0; border-radius: 10px;
+  background: var(--tobacco-lt); color: var(--tobacco);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Jost', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.06em;
+}
+.export-body { flex: 1; min-width: 0; }
+.export-label { font-family: 'Jost', sans-serif; font-size: 14px; font-weight: 600; color: var(--ink); }
+.export-desc { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+.export-btn {
+  display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0;
+  background: var(--cream); color: var(--tobacco); border: 1.5px solid var(--tobacco);
+  border-radius: var(--r-pill); padding: 8px 18px;
+  font-family: 'Jost', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.03em;
+  cursor: pointer; transition: all 0.16s;
+}
+.export-btn:hover { background: var(--tobacco-lt); }
+
+@media (max-width: 880px) {
+  .rep-grid { grid-template-columns: 1fr; }
+  .export-row { flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═════════ Sidebar ═════════ -->
+<aside class="sidebar">
+  <a href="dewi-assets-board.html" class="sidebar-logo assets-logo" style="text-decoration:none">
+    <div class="word">Dewi<span class="amp"> Assets</span></div>
+    <div class="sub">Board Administration</div>
+  </a>
+
+  <div class="sidebar-board">
+    <div class="lbl">Board</div>
+    <div class="name">Halifax Regional Centre for Education</div>
+    <div class="role">8 schools · 2,352 devices</div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="sidebar-nav-label">District</div>
+    <a class="nav-item" href="dewi-assets-board.html" style="text-decoration:none"><div class="nav-dot"></div>Dashboard</a>
+    <a class="nav-item" href="#" style="text-decoration:none"><div class="nav-dot"></div>Schools<span class="nav-badge badge-paper">8</span></a>
+    <a class="nav-item" href="dewi-assets-fleet.html" style="text-decoration:none"><div class="nav-dot"></div>Fleet Health</a>
+    <a class="nav-item" href="dewi-assets-search.html" style="text-decoration:none"><div class="nav-dot"></div>Device Search</a>
+    <a class="nav-item active" href="dewi-assets-reports.html" style="text-decoration:none"><div class="nav-dot"></div>Reports</a>
+    <a class="nav-item" href="dewi-assets-settings.html" style="text-decoration:none"><div class="nav-dot"></div>Settings</a>
+  </nav>
+
+  <div class="sidebar-user">
+    <div class="avi">R</div>
+    <div class="info">
+      <div class="name">R. MacIntyre</div>
+      <div class="role">District Technology Coordinator</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ═════════ Main ═════════ -->
+<main class="main">
+
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" style="font-style:italic;">Reports</div>
+      <div style="font-family:'Jost',sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-ghost);margin-top:2px">Board documents · budget &amp; procurement</div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-stat">Fiscal year <strong style="color:var(--tobacco);">2025–2026</strong></div>
+      <a class="btn btn-secondary btn-sm" href="dewi-assets-board.html" style="text-decoration:none">← Board</a>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Page header -->
+    <div class="page-head">
+      <div>
+        <div class="eyebrow">Board · Reports</div>
+        <h1>Reports</h1>
+        <p class="sub">2,352 devices · 8 schools · fiscal year 2025–2026</p>
+      </div>
+    </div>
+
+    <!-- ═══ Section 1 — Scheduled Reports ═══ -->
+    <section class="rep-section">
+      <div class="rep-section-head">
+        <span class="ix">i.</span>
+        <h2>Board reports</h2>
+        <span class="note">Formatted PDFs, ready to hand to the board of education</span>
+      </div>
+
+      <div class="rep-grid">
+
+        <div class="rep-card">
+          <div class="rep-card-top">
+            <div>
+              <h3>Annual Fleet Summary</h3>
+              <p class="desc">Full device inventory across all schools — Chromebook count, iPad count, average age, and AUE breakdown.</p>
+              <p class="use">For board of education annual reporting.</p>
+            </div>
+            <div class="rep-card-doc"><div class="lines"><i></i><i></i><i></i><i></i></div></div>
+          </div>
+          <div class="rep-card-foot">
+            <button class="rep-gen-btn" onclick="genReport('Annual Fleet Summary', this)"><span class="ic">⎙</span> Generate PDF</button>
+            <div class="rep-last">Last generated<span class="t">02 Jun 2026 · 9:14 AM</span></div>
+          </div>
+        </div>
+
+        <div class="rep-card">
+          <div class="rep-card-top">
+            <div>
+              <h3>Replacement Budget Forecast</h3>
+              <p class="desc">Devices expiring by fiscal year with estimated replacement costs.</p>
+              <p class="use">Designed for capital budget submissions — tells the board exactly what to spend, and when.</p>
+            </div>
+            <div class="rep-card-doc"><div class="lines"><i></i><i></i><i></i><i></i></div></div>
+          </div>
+          <div class="rep-card-foot">
+            <button class="rep-gen-btn" onclick="genReport('Replacement Budget Forecast', this)"><span class="ic">⎙</span> Generate PDF</button>
+            <div class="rep-last">Last generated<span class="t">28 May 2026 · 4:02 PM</span></div>
+          </div>
+        </div>
+
+        <div class="rep-card">
+          <div class="rep-card-top">
+            <div>
+              <h3>School-by-School Comparison</h3>
+              <p class="desc">Side-by-side health metrics for all eight schools.</p>
+              <p class="use">Useful for equity reporting and resource-allocation decisions.</p>
+            </div>
+            <div class="rep-card-doc"><div class="lines"><i></i><i></i><i></i><i></i></div></div>
+          </div>
+          <div class="rep-card-foot">
+            <button class="rep-gen-btn" onclick="genReport('School-by-School Comparison', this)"><span class="ic">⎙</span> Generate PDF</button>
+            <div class="rep-last empty">Not yet generated<span class="t">Run your first report</span></div>
+          </div>
+        </div>
+
+        <div class="rep-card">
+          <div class="rep-card-top">
+            <div>
+              <h3>AUE Expiry Detail</h3>
+              <p class="desc">Every device expiring within 24 months, grouped by school and cart.</p>
+              <p class="use">For procurement planning — the shopping list before budget season.</p>
+            </div>
+            <div class="rep-card-doc"><div class="lines"><i></i><i></i><i></i><i></i></div></div>
+          </div>
+          <div class="rep-card-foot">
+            <button class="rep-gen-btn" onclick="genReport('AUE Expiry Detail', this)"><span class="ic">⎙</span> Generate PDF</button>
+            <div class="rep-last empty">Not yet generated<span class="t">Run your first report</span></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ═══ Section 2 — Export Raw Data ═══ -->
+    <section class="rep-section">
+      <div class="rep-section-head">
+        <span class="ix">ii.</span>
+        <h2>Export raw data</h2>
+        <span class="note">Open in Excel, Sheets, or your procurement system</span>
+      </div>
+
+      <div class="export-list">
+        <div class="export-row">
+          <div class="export-icon">CSV</div>
+          <div class="export-body">
+            <div class="export-label">Full device inventory</div>
+            <div class="export-desc">All schools, all fields, every asset type.</div>
+          </div>
+          <button class="export-btn" onclick="exportCSV('full-device-inventory')">↓ Export CSV</button>
+        </div>
+        <div class="export-row">
+          <div class="export-icon">CSV</div>
+          <div class="export-body">
+            <div class="export-label">Devices expiring this year</div>
+            <div class="export-desc">Sorted by school, then AUE date.</div>
+          </div>
+          <button class="export-btn" onclick="exportCSV('expiring-this-year')">↓ Export CSV</button>
+        </div>
+        <div class="export-row">
+          <div class="export-icon">CSV</div>
+          <div class="export-body">
+            <div class="export-label">Unassigned devices</div>
+            <div class="export-desc">Devices in carts with no student assigned.</div>
+          </div>
+          <button class="export-btn" onclick="exportCSV('unassigned-devices')">↓ Export CSV</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="board-foot">
+      <div class="meta">
+        <span>© 2026 Dewi · Anchored Development Co</span>
+        <span class="sep">·</span>
+        <a href="#">Privacy</a>
+        <span class="sep">·</span>
+        <a href="#">FERPA / PIPEDA</a>
+      </div>
+      <div class="status">All systems operational</div>
+    </footer>
+
+  </div>
+</main>
+
+<!-- Floating scan button -->
+<a class="scan-fab" href="dewi-assets-search.html">
+  <span class="glyph">⌖</span>
+  <span>Find any device<span class="sub">Search across the board</span></span>
+</a>
+
+<!-- Toast -->
+<div class="sr-toast" id="toast" style="position:fixed;bottom:28px;left:50%;transform:translate(-50%,20px);z-index:600;background:var(--ink);color:var(--paper);padding:13px 22px;border-radius:var(--r-pill);font-family:'Jost',sans-serif;font-size:13px;font-weight:500;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);display:flex;align-items:center;gap:10px;"></div>
+
+<script src="dewi-assets-core.js"></script>
+<script>
+const C = AssetsCore;
+let INV = null, CARTS_BY_ID = {};
+
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.opacity = '1';
+  t.style.transform = 'translate(-50%, 0)';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translate(-50%, 20px)'; }, 2600);
+}
+
+function genReport(name, btn) {
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<span class="ic">◌</span> Generating…';
+  btn.style.opacity = '0.7';
+  toast(name + ' — building PDF (window.print)…');
+  setTimeout(() => {
+    btn.innerHTML = orig;
+    btn.style.opacity = '1';
+    window.print();
+    toast(name + ' — use your browser print dialog to save as PDF.');
+  }, 400);
+}
+
+function exportCSV(key) {
+  if (!INV) { toast('Data still loading…'); return; }
+  const assets = INV.assets;
+  const students = INV.students;
+  const now = new Date().getFullYear();
+
+  if (key === 'full-device-inventory') {
+    const head = ['School','Cart','Serial','Model','Type','Mfr Year','AUE','Condition','Assigned'];
+    const rows = assets.map(a => {
+      const cart = CARTS_BY_ID[a.cart_id];
+      const n = C.noteObj(a);
+      const studs = students.filter(st => st.cart_id === a.cart_id && st.slot_number === a.slot_number);
+      return [cart?cart.school:'', cart?cart.cart_number:'', a.serial_number, a.model,
+        C.detectDeviceType(a.model), a.purchase_year, n.aue||'', n.condition||'good',
+        studs.map(st=>st.username).join('; ')];
+    });
+    C.downloadCSV('dewi-full-inventory.csv', head, rows);
+  } else if (key === 'expiring-this-year') {
+    const head = ['School','Serial','Model','Type','AUE','Cart','Slot'];
+    const rows = assets.filter(a => {
+      const y = C.aueYear(a);
+      return y !== null && y <= now;
+    }).map(a => {
+      const cart = CARTS_BY_ID[a.cart_id];
+      return [cart?cart.school:'', a.serial_number, a.model, C.detectDeviceType(a.model),
+        C.noteObj(a).aue||'', cart?cart.cart_number:'', a.slot_number];
+    });
+    C.downloadCSV('dewi-expiring-this-year.csv', head, rows);
+  } else if (key === 'unassigned-devices') {
+    const assignedSet = {};
+    students.forEach(st => { assignedSet[st.cart_id + ':' + st.slot_number] = true; });
+    const head = ['School','Serial','Model','Cart','Slot','Status'];
+    const rows = assets.filter(a => !(a.slot_number != null && assignedSet[a.cart_id + ':' + a.slot_number])).map(a => {
+      const cart = CARTS_BY_ID[a.cart_id];
+      return [cart?cart.school:'', a.serial_number, a.model, cart?cart.cart_number:'', a.slot_number, 'Unassigned'];
+    });
+    C.downloadCSV('dewi-unassigned-devices.csv', head, rows);
+  }
+  toast('Exported dewi-' + key + '.csv');
+}
+
+AssetsCore.boot({
+  allow: ['board', 'school'],
+  onReady: async function (ctx) {
+    INV = await C.loadInventory(ctx.scope.schools);
+    INV.carts.forEach(c => { CARTS_BY_ID[c.id] = c; });
+  }
+});
+</script>
+
+</body>
+</html>

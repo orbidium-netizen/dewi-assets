@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings — Dewi Assets</title>
+<meta name="description" content="Board administration settings: board profile, schools, administrator access, plan, and data controls.">
+<link rel="stylesheet" href="dewi.css">
+<link rel="stylesheet" href="dewi-assets.css">
+<link rel="stylesheet" href="dewi-board.css">
+
+<script>
+let db = null;
+function initSupabase() {
+  try {
+    const { createClient } = supabase;
+    db = createClient(
+      'https://ivdkipygpasvowigarfb.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2ZGtpcHlncGFzdm93aWdhcmZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMzA2NzcsImV4cCI6MjA5MjcwNjY3N30.qKN6tCqyyIIVoPAVl1o2_2gtUkfBh2aBWDP_sIDcxgE'
+    );
+  } catch(e) { console.error('Supabase init failed:', e.message); }
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="initSupabase()"></script>
+
+<style>
+/* ═══ Settings layout ═══ */
+.set-section { margin-bottom: 32px; }
+.set-section-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+.set-section-head .ix { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 19px; font-weight: 700; color: var(--tobacco); line-height: 1; }
+.set-section-head h2 { font-family: 'Cormorant Garamond', serif; font-size: 23px; font-weight: 600; color: var(--ink); letter-spacing: -0.3px; }
+.set-section-head .hint { margin-left: auto; font-size: 12px; color: var(--ink-soft); }
+
+.set-card {
+  background: var(--cream); border: 1px solid var(--paper-deep);
+  border-radius: var(--r-card); box-shadow: var(--shadow-sm); overflow: hidden;
+}
+.set-card-body { padding: 26px 30px; }
+.set-card-foot {
+  padding: 16px 30px; background: var(--paper); border-top: 1px solid var(--paper-warm);
+  display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+}
+.set-card-foot .helper { font-size: 12px; color: var(--ink-soft); font-style: italic; }
+
+/* Form fields */
+.set-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 24px; }
+.set-field { display: flex; flex-direction: column; gap: 7px; }
+.set-field.wide { grid-column: 1 / -1; }
+.set-field-label {
+  font-family: 'Jost', sans-serif; font-size: 10px; font-weight: 600;
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-soft);
+}
+.set-field-label .opt { color: var(--ink-ghost); font-weight: 500; letter-spacing: 0.04em; text-transform: none; }
+.set-input, .set-select {
+  background: var(--paper); border: 1.5px solid var(--paper-deep); border-radius: var(--r-pill);
+  padding: 12px 20px; font-family: 'Jost', sans-serif; font-size: 14px; color: var(--ink);
+  outline: none; transition: all 0.18s; width: 100%;
+}
+.set-select { cursor: pointer; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%237A6A54' d='M6 8 0 0h12z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 18px center; padding-right: 40px;
+}
+.set-input:focus, .set-select:focus { border-color: var(--tobacco); box-shadow: 0 0 0 4px var(--tobacco-glow); background: var(--cream); }
+.set-input::placeholder { color: var(--ink-ghost); }
+
+.set-save-btn {
+  background: var(--tobacco); color: var(--paper); border: none; border-radius: var(--r-pill);
+  padding: 11px 26px; font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.04em;
+  cursor: pointer; transition: all 0.18s; box-shadow: 0 3px 14px var(--tobacco-glow);
+}
+.set-save-btn:hover { background: var(--tobacco-mid); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(107,76,42,0.24); }
+
+/* Generic tables */
+.set-table { width: 100%; border-collapse: collapse; }
+.set-table th {
+  background: var(--paper); padding: 11px 18px;
+  font-family: 'Jost', sans-serif; font-size: 10px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-soft);
+  text-align: left; border-bottom: 1px solid var(--paper-deep); white-space: nowrap;
+}
+.set-table th.num { text-align: right; }
+.set-table th.act { text-align: right; }
+.set-table td { padding: 13px 18px; font-size: 13px; color: var(--ink-mid); border-bottom: 1px solid var(--paper-warm); vertical-align: middle; }
+.set-table tr:last-child td { border-bottom: none; }
+.set-table tbody tr:hover td { background: var(--paper); }
+.set-table td.name { font-family: 'Cormorant Garamond', serif; font-size: 16px; font-weight: 600; color: var(--ink); }
+.set-table td.code { font-family: 'Jost', sans-serif; font-weight: 600; color: var(--ink-mid); letter-spacing: 0.06em; }
+.set-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.set-table td.act { text-align: right; white-space: nowrap; }
+
+.row-act {
+  font-family: 'Jost', sans-serif; font-size: 12px; font-weight: 500; color: var(--tobacco);
+  background: none; border: none; cursor: pointer; padding: 5px 8px; border-radius: 6px; transition: all 0.14s;
+}
+.row-act:hover { background: var(--tobacco-lt); }
+.row-act.danger { color: var(--burgundy); }
+.row-act.danger:hover { background: var(--burg-lt); }
+.row-act .sym { font-size: 13px; }
+
+.add-school-row td { padding: 0; border-bottom: none; }
+.add-school-btn {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 15px 18px; background: transparent; border: 1.5px dashed var(--paper-deep);
+  border-radius: 0; color: var(--tobacco); font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 600;
+  letter-spacing: 0.03em; cursor: pointer; transition: all 0.15s; justify-content: center;
+}
+.add-school-btn:hover { background: var(--tobacco-lt); border-color: var(--tobacco); }
+.add-school-form { display: none; padding: 16px 18px; background: var(--tobacco-soft); border-top: 1px solid var(--paper-warm); }
+.add-school-form.open { display: block; }
+.add-school-form .ff { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.add-school-form .set-input { flex: 1; min-width: 130px; width: auto; }
+
+.set-note {
+  display: flex; align-items: flex-start; gap: 9px;
+  padding: 13px 18px; background: var(--paper); border-top: 1px solid var(--paper-warm);
+  font-size: 12px; color: var(--ink-soft); line-height: 1.5;
+}
+.set-note::before { content: '›'; color: var(--tobacco); font-weight: 700; font-size: 14px; line-height: 1.2; }
+.set-note.italic { font-style: italic; }
+
+/* Admin access */
+.set-avi {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  background: var(--tobacco); color: var(--paper);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 13px;
+}
+.set-avi.school { background: var(--gold); color: var(--sidebar-bg); }
+.role-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 11px; border-radius: var(--r-pill);
+  font-family: 'Jost', sans-serif; font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em; white-space: nowrap;
+}
+.role-pill.board { background: var(--tobacco); color: var(--paper); }
+.role-pill.school { background: var(--tobacco-lt); color: var(--tobacco); }
+.stat-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: 'Jost', sans-serif; font-size: 11.5px; font-weight: 500; color: var(--ink-mid);
+}
+.stat-pill::before { content: ''; width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: var(--health-good); }
+.stat-pill.invited::before { background: var(--health-warn); }
+.stat-pill.suspended::before { background: var(--ink-ghost); }
+
+.invite-bar { padding: 16px 30px; background: var(--paper); border-top: 1px solid var(--paper-warm); display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.invite-open-btn {
+  display: inline-flex; align-items: center; gap: 9px;
+  background: var(--tobacco); color: var(--paper); border: none; border-radius: var(--r-pill);
+  padding: 10px 22px; font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.03em;
+  cursor: pointer; transition: all 0.18s; box-shadow: 0 3px 14px var(--tobacco-glow);
+}
+.invite-open-btn:hover { background: var(--tobacco-mid); transform: translateY(-1px); }
+.invite-open-btn::after { content: '→'; transition: transform 0.18s; }
+.invite-open-btn:hover::after { transform: translateX(3px); }
+
+/* Plan card */
+.plan-card {
+  background: linear-gradient(135deg, #33240F 0%, var(--tobacco-deep) 100%);
+  border-radius: var(--r-card); padding: 26px 30px; color: var(--paper);
+  display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap;
+  box-shadow: var(--shadow-md); position: relative; overflow: hidden;
+}
+.plan-card::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(45deg, transparent 0, transparent 16px, rgba(212,167,106,0.03) 16px, rgba(212,167,106,0.03) 32px); }
+.plan-left { position: relative; z-index: 1; }
+.plan-eyebrow { font-family: 'Jost', sans-serif; font-size: 9.5px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+.plan-name { font-family: 'Cormorant Garamond', serif; font-size: 30px; font-weight: 700; font-style: italic; color: var(--paper); line-height: 1; }
+.plan-meta { display: flex; gap: 28px; position: relative; z-index: 1; flex-wrap: wrap; }
+.plan-stat .pl { font-family: 'Jost', sans-serif; font-size: 9px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(212,167,106,0.7); margin-bottom: 5px; }
+.plan-stat .pv { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 700; color: var(--paper); line-height: 1; }
+.plan-stat .pv small { font-family: 'Jost', sans-serif; font-size: 12px; font-weight: 500; color: rgba(245,239,228,0.6); }
+.plan-billing { position: relative; z-index: 1; }
+.plan-billing a { font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 600; color: var(--gold); letter-spacing: 0.03em; }
+.plan-billing a:hover { text-decoration: underline; }
+
+/* Danger zone */
+.danger-card {
+  background: var(--cream); border: 1px solid var(--paper-deep); border-left: 5px solid var(--burgundy);
+  border-radius: var(--r-card); box-shadow: var(--shadow-sm); overflow: hidden;
+}
+.danger-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 20px 28px; border-bottom: 1px solid var(--paper-warm); flex-wrap: wrap; }
+.danger-row:last-child { border-bottom: none; }
+.danger-body { flex: 1; min-width: 240px; }
+.danger-body h4 { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+.danger-body p { font-size: 12.5px; color: var(--ink-soft); line-height: 1.55; max-width: 460px; }
+.danger-btn-outline {
+  background: var(--cream); color: var(--tobacco); border: 1.5px solid var(--tobacco); border-radius: var(--r-pill);
+  padding: 10px 20px; font-family: 'Jost', sans-serif; font-size: 12.5px; font-weight: 600; letter-spacing: 0.03em; cursor: pointer; transition: all 0.16s; white-space: nowrap;
+}
+.danger-btn-outline:hover { background: var(--tobacco-lt); }
+.danger-btn-solid {
+  background: var(--burgundy); color: var(--paper); border: none; border-radius: var(--r-pill);
+  padding: 11px 22px; font-family: 'Jost', sans-serif; font-size: 12.5px; font-weight: 600; letter-spacing: 0.03em; cursor: pointer; transition: all 0.16s; white-space: nowrap;
+  box-shadow: 0 3px 14px var(--burg-glow);
+}
+.danger-btn-solid:hover { background: #571F2C; transform: translateY(-1px); }
+
+/* ═══ Slide-in invite panel ═══ */
+.scrim { position: fixed; inset: 0; background: rgba(20,14,8,0.5); backdrop-filter: blur(2px); z-index: 400; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+.scrim.open { opacity: 1; pointer-events: auto; }
+.slide-panel {
+  position: fixed; top: 0; right: 0; bottom: 0; width: 440px; max-width: 92vw; z-index: 401;
+  background: var(--cream); box-shadow: -12px 0 48px rgba(20,14,8,0.28);
+  transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  display: flex; flex-direction: column;
+}
+.slide-panel.open { transform: translateX(0); }
+.slide-head { padding: 28px 32px 22px; border-bottom: 1px solid var(--paper-deep); }
+.slide-head .eyebrow { font-family: 'Jost', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--tobacco); margin-bottom: 10px; }
+.slide-head h3 { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 600; color: var(--ink); letter-spacing: -0.4px; line-height: 1.1; }
+.slide-head h3 em { font-style: italic; color: var(--tobacco); }
+.slide-head p { font-size: 13px; color: var(--ink-soft); margin-top: 8px; line-height: 1.55; }
+.slide-body { padding: 26px 32px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+.role-toggle { display: flex; gap: 8px; }
+.role-opt {
+  flex: 1; padding: 13px 14px; border-radius: 12px; border: 1.5px solid var(--paper-deep); background: var(--paper);
+  cursor: pointer; transition: all 0.15s; text-align: center;
+}
+.role-opt.active { border-color: var(--tobacco); background: var(--tobacco-lt); }
+.role-opt .rt { font-family: 'Cormorant Garamond', serif; font-size: 16px; font-weight: 600; color: var(--ink); }
+.role-opt .rd { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+.role-opt.active .rt { color: var(--tobacco); }
+#invite-school-field { display: none; }
+#invite-school-field.show { display: flex; }
+.slide-foot { padding: 20px 32px 26px; border-top: 1px solid var(--paper-deep); display: flex; flex-direction: column; gap: 12px; }
+.slide-helper { font-size: 11.5px; color: var(--ink-soft); text-align: center; line-height: 1.5; }
+.send-invite-btn {
+  background: var(--tobacco); color: var(--paper); border: none; border-radius: var(--r-pill);
+  padding: 14px 24px; font-family: 'Jost', sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 0.04em; cursor: pointer; transition: all 0.18s; width: 100%;
+}
+.send-invite-btn:hover { background: var(--tobacco-mid); }
+.slide-close { position: absolute; top: 24px; right: 28px; background: none; border: none; font-size: 22px; color: var(--ink-soft); cursor: pointer; line-height: 1; }
+.slide-close:hover { color: var(--tobacco); }
+
+/* ═══ Confirm modal ═══ */
+.modal-scrim { position: fixed; inset: 0; background: rgba(20,14,8,0.55); backdrop-filter: blur(3px); z-index: 500; display: none; align-items: center; justify-content: center; padding: 24px; }
+.modal-scrim.open { display: flex; }
+.modal {
+  background: var(--cream); border-radius: var(--r-card); max-width: 460px; width: 100%;
+  box-shadow: var(--shadow-xl); overflow: hidden; border-top: 5px solid var(--burgundy);
+}
+.modal-body { padding: 30px 32px 24px; }
+.modal-body h3 { font-family: 'Cormorant Garamond', serif; font-size: 25px; font-weight: 600; color: var(--ink); letter-spacing: -0.3px; margin-bottom: 8px; }
+.modal-body h3 em { font-style: italic; color: var(--burgundy); }
+.modal-body p { font-size: 13px; color: var(--ink-mid); line-height: 1.6; margin-bottom: 18px; }
+.modal-body .confirm-label { font-family: 'Jost', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink-soft); margin-bottom: 8px; }
+.modal-body .confirm-label strong { color: var(--burgundy); }
+.modal-input { width: 100%; background: var(--paper); border: 1.5px solid var(--paper-deep); border-radius: var(--r-pill); padding: 12px 20px; font-family: 'Jost', sans-serif; font-size: 14px; color: var(--ink); outline: none; transition: all 0.18s; }
+.modal-input:focus { border-color: var(--burgundy); box-shadow: 0 0 0 3px var(--burg-glow); }
+.modal-foot { padding: 16px 32px 24px; display: flex; gap: 10px; justify-content: flex-end; }
+.modal-cancel { background: var(--cream); color: var(--ink-mid); border: 1.5px solid var(--paper-deep); border-radius: var(--r-pill); padding: 11px 22px; font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+.modal-cancel:hover { background: var(--paper-warm); }
+.modal-confirm { background: var(--burgundy); color: var(--paper); border: none; border-radius: var(--r-pill); padding: 11px 22px; font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; opacity: 0.4; pointer-events: none; }
+.modal-confirm.armed { opacity: 1; pointer-events: auto; }
+.modal-confirm.armed:hover { background: #571F2C; }
+
+@media (max-width: 860px) {
+  .set-form-grid { grid-template-columns: 1fr; }
+  .set-table-scroll { overflow-x: auto; }
+  .set-table { min-width: 680px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═════════ Sidebar ═════════ -->
+<aside class="sidebar">
+  <a href="dewi-assets-board.html" class="sidebar-logo assets-logo" style="text-decoration:none">
+    <div class="word">Dewi<span class="amp"> Assets</span></div>
+    <div class="sub">Board Administration</div>
+  </a>
+
+  <div class="sidebar-board">
+    <div class="lbl">Board</div>
+    <div class="name">Halifax Regional Centre for Education</div>
+    <div class="role">8 schools · 2,352 devices</div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="sidebar-nav-label">District</div>
+    <a class="nav-item" href="dewi-assets-board.html" style="text-decoration:none"><div class="nav-dot"></div>Dashboard</a>
+    <a class="nav-item" href="#" style="text-decoration:none"><div class="nav-dot"></div>Schools<span class="nav-badge badge-paper">8</span></a>
+    <a class="nav-item" href="dewi-assets-fleet.html" style="text-decoration:none"><div class="nav-dot"></div>Fleet Health</a>
+    <a class="nav-item" href="dewi-assets-search.html" style="text-decoration:none"><div class="nav-dot"></div>Device Search</a>
+    <a class="nav-item" href="dewi-assets-reports.html" style="text-decoration:none"><div class="nav-dot"></div>Reports</a>
+    <a class="nav-item active" href="dewi-assets-settings.html" style="text-decoration:none"><div class="nav-dot"></div>Settings</a>
+  </nav>
+
+  <div class="sidebar-user" style="cursor:pointer;" onclick="AssetsCore.signOutAdmin()" title="Sign out">
+    <div class="avi" id="sb-avi">·</div>
+    <div class="info">
+      <div class="name" id="sb-user">—</div>
+      <div class="role">Board Admin · Sign out</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ═════════ Main ═════════ -->
+<main class="main">
+
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" style="font-style:italic;">Settings</div>
+      <div style="font-family:'Jost',sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-ghost);margin-top:2px">Board administration · access &amp; configuration</div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-stat">Signed in as <strong style="color:var(--tobacco);">Board Admin</strong></div>
+      <a class="btn btn-secondary btn-sm" href="dewi-assets-board.html" style="text-decoration:none">← Board</a>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Page header -->
+    <div class="page-head">
+      <div>
+        <div class="eyebrow">Board · Settings</div>
+        <h1>Settings</h1>
+        <p class="sub">Halifax Regional Centre for Education · Board Administration</p>
+      </div>
+    </div>
+
+    <!-- ═══ Section 1 — Board Profile ═══ -->
+    <section class="set-section">
+      <div class="set-section-head"><span class="ix">i.</span><h2>Board profile</h2></div>
+      <form class="set-card" id="profile-form" onsubmit="event.preventDefault();saveProfile();">
+        <div class="set-card-body">
+          <div class="set-form-grid">
+            <div class="set-field">
+              <label class="set-field-label" for="b-name">Board name</label>
+              <input class="set-input" id="b-name" type="text" value="Halifax Regional Centre for Education">
+            </div>
+            <div class="set-field">
+              <label class="set-field-label" for="b-prov">Province / Territory</label>
+              <select class="set-select" id="b-prov">
+                <option>Alberta</option>
+                <option>British Columbia</option>
+                <option>Manitoba</option>
+                <option>New Brunswick</option>
+                <option>Newfoundland and Labrador</option>
+                <option>Northwest Territories</option>
+                <option selected>Nova Scotia</option>
+                <option>Nunavut</option>
+                <option>Ontario</option>
+                <option>Prince Edward Island</option>
+                <option>Quebec</option>
+                <option>Saskatchewan</option>
+                <option>Yukon</option>
+                <option>Other (international)</option>
+              </select>
+            </div>
+            <div class="set-field">
+              <label class="set-field-label" for="b-admin">Board administrator name</label>
+              <input class="set-input" id="b-admin" type="text" value="Rachel MacIntyre">
+            </div>
+            <div class="set-field">
+              <label class="set-field-label" for="b-email">Contact email</label>
+              <input class="set-input" id="b-email" type="email" value="r.macintyre@hrce.gnspes.ca">
+            </div>
+            <div class="set-field">
+              <label class="set-field-label" for="b-fy">Fiscal year start month</label>
+              <select class="set-select" id="b-fy">
+                <option selected>July</option>
+                <option>August</option><option>September</option><option>October</option>
+                <option>November</option><option>December</option><option>January</option>
+                <option>February</option><option>March</option><option>April</option>
+                <option>May</option><option>June</option>
+              </select>
+            </div>
+            <div class="set-field">
+              <label class="set-field-label" for="b-budget">Annual device budget <span class="opt">· optional</span></label>
+              <input class="set-input" id="b-budget" type="text" value="$220,000" placeholder="Used for replacement forecasts">
+            </div>
+          </div>
+        </div>
+        <div class="set-card-foot">
+          <div class="helper">This information appears on all generated reports.</div>
+          <button class="set-save-btn" type="submit">Save changes</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ═══ Section 2 — Schools ═══ -->
+    <section class="set-section">
+      <div class="set-section-head"><span class="ix">ii.</span><h2>Schools in this board</h2><span class="hint">8 schools</span></div>
+      <div class="set-card">
+        <div class="set-table-scroll">
+          <table class="set-table">
+            <thead>
+              <tr>
+                <th>School name</th><th>City</th><th>School code</th>
+                <th class="num">Devices</th><th>Admin</th><th class="act">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="schools-tbody">
+              <tr>
+                <td class="name">Cape Mira High</td><td>Halifax</td><td class="code">CMH-204</td>
+                <td class="num">540</td><td>T. Boudreau</td>
+                <td class="act"><button class="row-act" onclick="toast('Edit Cape Mira High')"><span class="sym">✎</span> Edit</button><button class="row-act danger" onclick="toast('Archive Cape Mira High?')"><span class="sym">×</span> Remove</button></td>
+              </tr>
+              <tr>
+                <td class="name">Pinehaven Elementary</td><td>Lower Sackville</td><td class="code">PHE-118</td>
+                <td class="num">142</td><td>S. Nguyen</td>
+                <td class="act"><button class="row-act" onclick="toast('Edit Pinehaven Elementary')"><span class="sym">✎</span> Edit</button><button class="row-act danger" onclick="toast('Archive Pinehaven Elementary?')"><span class="sym">×</span> Remove</button></td>
+              </tr>
+              <tr>
+                <td class="name">Harbourview High</td><td>Dartmouth</td><td class="code">HVH-331</td>
+                <td class="num">612</td><td>M. Clarke</td>
+                <td class="act"><button class="row-act" onclick="toast('Edit Harbourview High')"><span class="sym">✎</span> Edit</button><button class="row-act danger" onclick="toast('Archive Harbourview High?')"><span class="sym">×</span> Remove</button></td>
+              </tr>
+              <tr>
+                <td class="name">Birchwood Elementary</td><td>Cole Harbour</td><td class="code">BWE-076</td>
+                <td class="num">168</td><td>L. Fraser</td>
+                <td class="act"><button class="row-act" onclick="toast('Edit Birchwood Elementary')"><span class="sym">✎</span> Edit</button><button class="row-act danger" onclick="toast('Archive Birchwood Elementary?')"><span class="sym">×</span> Remove</button></td>
+              </tr>
+              <tr>
+                <td class="name">Seaview Academy</td><td>Eastern Passage</td><td class="code">SVA-219</td>
+                <td class="num">318</td><td>D. Aucoin</td>
+                <td class="act"><button class="row-act" onclick="toast('Edit Seaview Academy')"><span class="sym">✎</span> Edit</button><button class="row-act danger" onclick="toast('Archive Seaview Academy?')"><span class="sym">×</span> Remove</button></td>
+              </tr>
+              <tr>
+                <td class="name">Riverside Junior High</td><td>Halifax</td><td class="code">RJH-247</td>
+                <td class="num">248</td><td>M. Chen</td>
+                <td class="act"><button class="row-act" onclick="toast('Edit Riverside Junior High')"><span class="sym">✎</span> Edit</button><button class="row-act danger" onclick="toast('Archive Riverside Junior High?')"><span class="sym">×</span> Remove</button></td>
+              </tr>
+              <tr>
+                <td class="name">Maplewood Junior High</td><td>Bedford</td><td class="code">MJH-152</td>
+                <td class="num">226</td><td>P. Gallant</td>
+                <td class="act"><button class="row-act" onclick="toast('Edit Maplewood Junior High')"><span class="sym">✎</span> Edit</button><button class="row-act danger" onclick="toast('Archive Maplewood Junior High?')"><span class="sym">×</span> Remove</button></td>
+              </tr>
+              <tr>
+                <td class="name">Fundy Shore Consolidated</td><td>Musquodoboit Harbour</td><td class="code">FSC-061</td>
+                <td class="num">98</td><td>K. Doucette</td>
+                <td class="act"><button class="row-act" onclick="toast('Edit Fundy Shore Consolidated')"><span class="sym">✎</span> Edit</button><button class="row-act danger" onclick="toast('Archive Fundy Shore Consolidated?')"><span class="sym">×</span> Remove</button></td>
+              </tr>
+              <tr class="add-school-row">
+                <td colspan="6">
+                  <button class="add-school-btn" type="button" onclick="document.getElementById('add-school-form').classList.toggle('open')">+ Add a school</button>
+                  <div class="add-school-form" id="add-school-form">
+                    <div class="ff">
+                      <input class="set-input" id="new-school-name" type="text" placeholder="School name">
+                      <input class="set-input" id="new-school-city" type="text" placeholder="City">
+                      <input class="set-input" id="new-school-code" type="text" placeholder="School code" style="max-width:140px">
+                      <button class="set-save-btn" type="button" onclick="addSchool()">Add school</button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="set-note">Removing a school does not delete its device data — it is archived and can be restored.</div>
+      </div>
+    </section>
+
+    <!-- ═══ Section 3 — Administrator Access ═══ -->
+    <section class="set-section">
+      <div class="set-section-head"><span class="ix">iii.</span><h2>Administrator access</h2><span class="hint">Who can sign in</span></div>
+      <div class="set-card">
+        <div class="set-table-scroll">
+          <table class="set-table">
+            <thead>
+              <tr>
+                <th>Administrator</th><th>Email</th><th>Role</th><th>School</th><th>Last active</th><th>Status</th><th class="act">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="admins-tbody">
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:11px;"><span class="set-avi">R</span><span style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--ink);">Rachel MacIntyre</span></div></td>
+                <td>r.macintyre@hrce.gnspes.ca</td>
+                <td><span class="role-pill board">Board Admin</span></td>
+                <td style="color:var(--ink-ghost);">— All schools</td>
+                <td>Active now</td>
+                <td><span class="stat-pill">Active</span></td>
+                <td class="act"><button class="row-act" onclick="toast('Edit Rachel MacIntyre')">Edit</button><button class="row-act danger" onclick="toast('Revoke access?')">Revoke</button></td>
+              </tr>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:11px;"><span class="set-avi">J</span><span style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--ink);">James Holloway</span></div></td>
+                <td>j.holloway@hrce.gnspes.ca</td>
+                <td><span class="role-pill board">Board Admin</span></td>
+                <td style="color:var(--ink-ghost);">— All schools</td>
+                <td>2 hours ago</td>
+                <td><span class="stat-pill">Active</span></td>
+                <td class="act"><button class="row-act" onclick="toast('Edit James Holloway')">Edit</button><button class="row-act danger" onclick="toast('Revoke access?')">Revoke</button></td>
+              </tr>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:11px;"><span class="set-avi school">T</span><span style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--ink);">Theresa Boudreau</span></div></td>
+                <td>t.boudreau@hrce.gnspes.ca</td>
+                <td><span class="role-pill school">School Admin</span></td>
+                <td>Cape Mira High</td>
+                <td>Yesterday</td>
+                <td><span class="stat-pill">Active</span></td>
+                <td class="act"><button class="row-act" onclick="toast('Edit Theresa Boudreau')">Edit</button><button class="row-act danger" onclick="toast('Revoke access?')">Revoke</button></td>
+              </tr>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:11px;"><span class="set-avi school">M</span><span style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--ink);">Margaret Chen</span></div></td>
+                <td>m.chen@hrce.gnspes.ca</td>
+                <td><span class="role-pill school">School Admin</span></td>
+                <td>Riverside Junior High</td>
+                <td>3 days ago</td>
+                <td><span class="stat-pill">Active</span></td>
+                <td class="act"><button class="row-act" onclick="toast('Edit Margaret Chen')">Edit</button><button class="row-act danger" onclick="toast('Revoke access?')">Revoke</button></td>
+              </tr>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:11px;"><span class="set-avi school">D</span><span style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--ink);">Daniel Aucoin</span></div></td>
+                <td>d.aucoin@hrce.gnspes.ca</td>
+                <td><span class="role-pill school">School Admin</span></td>
+                <td>Seaview Academy</td>
+                <td>Invite pending</td>
+                <td><span class="stat-pill invited">Invited</span></td>
+                <td class="act"><button class="row-act" onclick="toast('Resend invite to Daniel Aucoin')">Resend</button><button class="row-act danger" onclick="toast('Cancel invite?')">Revoke</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="invite-bar">
+          <div style="font-size:12px;color:var(--ink-soft);">Invite codes expire after 7 days.</div>
+          <button class="invite-open-btn" onclick="openInvite()">Invite an administrator</button>
+        </div>
+        <div class="set-note italic">Board admins can see all schools. School admins see only the school they are assigned to. Teachers never have access to Dewi Assets.</div>
+      </div>
+    </section>
+
+    <!-- ═══ Current plan ═══ -->
+    <section class="set-section">
+      <div class="set-section-head"><span class="ix">iv.</span><h2>Plan &amp; data</h2></div>
+      <div class="plan-card" style="margin-bottom:18px;">
+        <div class="plan-left">
+          <div class="plan-eyebrow">Current plan</div>
+          <div class="plan-name">District Plan</div>
+        </div>
+        <div class="plan-meta">
+          <div class="plan-stat"><div class="pl">Schools</div><div class="pv">8 <small>of unlimited</small></div></div>
+          <div class="plan-stat"><div class="pl">Annual cost</div><div class="pv">$3,200<small>/year</small></div></div>
+          <div class="plan-stat"><div class="pl">Renews</div><div class="pv">Aug 1, 2026</div></div>
+        </div>
+        <div class="plan-billing"><a href="#" onclick="event.preventDefault();toast('Opening billing portal…')">Manage billing →</a></div>
+      </div>
+
+      <!-- Danger zone -->
+      <div class="danger-card">
+        <div class="danger-row">
+          <div class="danger-body">
+            <h4>Export all data</h4>
+            <p>Download a complete backup of all board inventory as CSV. Recommended before any major changes.</p>
+          </div>
+          <button class="danger-btn-outline" onclick="exportBackup()">↓ Export backup CSV</button>
+        </div>
+        <div class="danger-row">
+          <div class="danger-body">
+            <h4>Reset board inventory</h4>
+            <p>Permanently removes all device and cart data for this board. This cannot be undone.</p>
+          </div>
+          <button class="danger-btn-solid" onclick="openResetModal()">Reset board inventory</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="board-foot">
+      <div class="meta">
+        <span>© 2026 Dewi · Anchored Development Co</span>
+        <span class="sep">·</span>
+        <a href="#">Privacy</a>
+        <span class="sep">·</span>
+        <a href="#">FERPA / PIPEDA</a>
+      </div>
+      <div class="status">All systems operational</div>
+    </footer>
+
+  </div>
+</main>
+
+<!-- Floating scan button -->
+<a class="scan-fab" href="dewi-assets-search.html">
+  <span class="glyph">⌖</span>
+  <span>Find any device<span class="sub">Search across the board</span></span>
+</a>
+
+<!-- ═══ Invite slide-in panel ═══ -->
+<div class="scrim" id="invite-scrim" onclick="closeInvite()"></div>
+<aside class="slide-panel" id="invite-panel">
+  <button class="slide-close" onclick="closeInvite()">×</button>
+  <div class="slide-head">
+    <div class="eyebrow">Administrator access</div>
+    <h3>Invite an <em>administrator</em></h3>
+    <p>They'll receive a one-time invite code by email to set up their account.</p>
+  </div>
+  <form class="slide-body" onsubmit="event.preventDefault();sendInvite();">
+    <div class="set-field">
+      <label class="set-field-label" for="inv-email">Email address</label>
+      <input class="set-input" id="inv-email" type="email" placeholder="name@hrce.gnspes.ca" required>
+    </div>
+    <div class="set-field">
+      <label class="set-field-label">Role</label>
+      <div class="role-toggle">
+        <div class="role-opt active" id="role-board" onclick="pickRole('board')">
+          <div class="rt">Board Admin</div>
+          <div class="rd">All schools</div>
+        </div>
+        <div class="role-opt" id="role-school" onclick="pickRole('school')">
+          <div class="rt">School Admin</div>
+          <div class="rd">One school</div>
+        </div>
+      </div>
+    </div>
+    <div class="set-field" id="invite-school-field">
+      <label class="set-field-label" for="inv-school">Assigned school</label>
+      <select class="set-select" id="inv-school">
+        <option>Cape Mira High</option>
+        <option>Pinehaven Elementary</option>
+        <option>Harbourview High</option>
+        <option>Birchwood Elementary</option>
+        <option>Seaview Academy</option>
+        <option>Riverside Junior High</option>
+        <option>Maplewood Junior High</option>
+        <option>Fundy Shore Consolidated</option>
+      </select>
+    </div>
+  </form>
+  <div class="slide-foot">
+    <button class="send-invite-btn" onclick="sendInvite()">Send invite</button>
+    <div class="slide-helper">Invite codes expire after 7 days. One code per administrator.</div>
+  </div>
+</aside>
+
+<!-- ═══ Reset confirm modal ═══ -->
+<div class="modal-scrim" id="reset-modal">
+  <div class="modal">
+    <div class="modal-body">
+      <h3>Reset <em>board inventory?</em></h3>
+      <p>This permanently removes all device and cart data for <strong>Halifax Regional Centre for Education</strong> across all eight schools. Administrator accounts are kept. This cannot be undone.</p>
+      <div class="confirm-label">Type <strong>Halifax Regional Centre for Education</strong> to confirm</div>
+      <input class="modal-input" id="reset-confirm" type="text" placeholder="Board name" autocomplete="off" oninput="checkReset()">
+    </div>
+    <div class="modal-foot">
+      <button class="modal-cancel" onclick="closeResetModal()">Cancel</button>
+      <button class="modal-confirm" id="reset-confirm-btn" onclick="doReset()">Reset inventory</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" style="position:fixed;bottom:28px;left:50%;transform:translate(-50%,20px);z-index:600;background:var(--ink);color:var(--paper);padding:13px 22px;border-radius:var(--r-pill);font-family:'Jost',sans-serif;font-size:13px;font-weight:500;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);display:flex;align-items:center;gap:10px;"></div>
+
+<script src="dewi-assets-core.js"></script>
+<script>
+const C = AssetsCore;
+let PROFILE = null, BOARD_SCHOOLS = [], ADMINS = [], INVITES = [];
+
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.opacity = '1';
+  t.style.transform = 'translate(-50%, 0)';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translate(-50%, 20px)'; }, 2600);
+}
+
+// Invite panel
+function openInvite() { document.getElementById('invite-scrim').classList.add('open'); document.getElementById('invite-panel').classList.add('open'); }
+function closeInvite() { document.getElementById('invite-scrim').classList.remove('open'); document.getElementById('invite-panel').classList.remove('open'); }
+function pickRole(role) {
+  document.getElementById('role-board').classList.toggle('active', role === 'board');
+  document.getElementById('role-school').classList.toggle('active', role === 'school');
+  document.getElementById('invite-school-field').classList.toggle('show', role === 'school');
+}
+
+async function sendInvite() {
+  const email = document.getElementById('inv-email').value.trim();
+  if (!email) { document.getElementById('inv-email').focus(); return; }
+  const role = document.getElementById('role-school').classList.contains('active') ? 'school' : 'board';
+  const school = role === 'school' ? document.getElementById('inv-school').value : null;
+
+  const { data, error } = await db.from('admin_invites').insert({
+    email: email,
+    role: role,
+    school: school,
+    board: PROFILE.board,
+    invited_by: PROFILE.id
+  }).select().single();
+
+  if (error) { toast('Error: ' + error.message); return; }
+  closeInvite();
+  toast('Invite sent to ' + email + ' · code: ' + data.id);
+  document.getElementById('inv-email').value = '';
+  loadAdmins();
+}
+
+async function saveProfile() {
+  const prefs = PROFILE.prefs || {};
+  prefs.province = document.getElementById('b-prov').value;
+  prefs.fiscal_year = document.getElementById('b-fy').value;
+  prefs.budget = document.getElementById('b-budget').value;
+
+  const { error } = await db.from('admin_accounts').update({
+    full_name: document.getElementById('b-admin').value.trim() || null,
+    email: document.getElementById('b-email').value.trim(),
+    board: document.getElementById('b-name').value.trim(),
+    prefs: prefs
+  }).eq('id', PROFILE.id);
+
+  toast(error ? 'Error: ' + error.message : 'Board profile saved');
+}
+
+async function addSchool() {
+  const name = document.getElementById('new-school-name').value.trim();
+  const city = document.getElementById('new-school-city').value.trim();
+  const code = document.getElementById('new-school-code').value.trim();
+  if (!name) { document.getElementById('new-school-name').focus(); return; }
+
+  const { error } = await db.from('board_schools').insert({
+    board_id: PROFILE.id,
+    school_name: name,
+    city: city || null,
+    school_code: code || null
+  });
+  if (error) { toast('Error: ' + error.message); return; }
+  toast('School added: ' + name);
+  document.getElementById('add-school-form').classList.remove('open');
+  document.getElementById('new-school-name').value = '';
+  document.getElementById('new-school-city').value = '';
+  document.getElementById('new-school-code').value = '';
+  loadSchools();
+}
+
+async function removeSchool(id, name) {
+  if (!confirm('Remove ' + name + ' from the board? Device data is preserved.')) return;
+  const { error } = await db.from('board_schools').delete().eq('id', id);
+  toast(error ? 'Error: ' + error.message : name + ' removed from board');
+  loadSchools();
+}
+
+async function loadSchools() {
+  const { data } = await db.from('board_schools').select('*').eq('board_id', PROFILE.id).order('school_name');
+  BOARD_SCHOOLS = data || [];
+  const tbody = document.getElementById('schools-tbody');
+  if (!tbody) return;
+  const addRow = tbody.querySelector('.add-school-row');
+  const addHTML = addRow ? addRow.outerHTML : '';
+  tbody.innerHTML = BOARD_SCHOOLS.map(bs => `<tr>
+    <td class="name">${C.esc(bs.school_name)}</td>
+    <td>${C.esc(bs.city||'')}</td>
+    <td class="code">${C.esc(bs.school_code||'')}</td>
+    <td class="num">—</td>
+    <td>—</td>
+    <td class="act">
+      <button class="row-act danger" onclick="removeSchool('${bs.id}','${C.esc(bs.school_name)}')"><span class="sym">×</span> Remove</button>
+    </td>
+  </tr>`).join('') + addHTML;
+  // Update invite school dropdown
+  const invSel = document.getElementById('inv-school');
+  if (invSel) {
+    invSel.innerHTML = BOARD_SCHOOLS.map(bs =>
+      '<option value="' + C.esc(bs.school_name) + '">' + C.esc(bs.school_name) + '</option>'
+    ).join('');
+  }
+}
+
+async function loadAdmins() {
+  const [aRes, iRes] = await Promise.all([
+    db.from('admin_accounts').select('*').eq('board', PROFILE.board),
+    db.from('admin_invites').select('*').eq('invited_by', PROFILE.id).is('used_at', null)
+  ]);
+  ADMINS = aRes.data || [];
+  INVITES = iRes.data || [];
+  const tbody = document.getElementById('admins-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = ADMINS.map(a => {
+    const initial = (a.full_name || a.email || '?').charAt(0).toUpperCase();
+    const name = a.full_name || a.email;
+    const isBoard = a.role === 'board';
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:11px;"><span class="set-avi${isBoard?'':' school'}">${C.esc(initial)}</span><span style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--ink);">${C.esc(name)}</span></div></td>
+      <td>${C.esc(a.email)}</td>
+      <td><span class="role-pill ${a.role}">${isBoard ? 'Board Admin' : 'School Admin'}</span></td>
+      <td>${isBoard ? '<span style="color:var(--ink-ghost);">— All schools</span>' : C.esc(a.school||'—')}</td>
+      <td>${C.relativeTime(a.last_seen)}</td>
+      <td><span class="stat-pill">Active</span></td>
+      <td class="act">${a.id === PROFILE.id ? '' : '<button class="row-act danger" onclick="toast(\'Revoke not yet implemented\')">Revoke</button>'}</td>
+    </tr>`;
+  }).join('') + INVITES.map(inv => {
+    const expired = new Date(inv.expires_at) < new Date();
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:11px;"><span class="set-avi school">?</span><span style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--ink-soft);">${C.esc(inv.email)}</span></div></td>
+      <td>${C.esc(inv.email)}</td>
+      <td><span class="role-pill ${inv.role}">${inv.role === 'board' ? 'Board Admin' : 'School Admin'}</span></td>
+      <td>${C.esc(inv.school||'— All schools')}</td>
+      <td>Invite pending</td>
+      <td><span class="stat-pill invited">${expired ? 'Expired' : 'Invited'}</span></td>
+      <td class="act"><button class="row-act danger" onclick="cancelInvite('${inv.id}')">Revoke</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function cancelInvite(id) {
+  await db.from('admin_invites').delete().eq('id', id);
+  toast('Invite cancelled');
+  loadAdmins();
+}
+
+// Reset modal
+function openResetModal() { document.getElementById('reset-modal').classList.add('open'); document.getElementById('reset-confirm').value=''; checkReset(); }
+function closeResetModal() { document.getElementById('reset-modal').classList.remove('open'); }
+function checkReset() {
+  const v = document.getElementById('reset-confirm').value.trim();
+  document.getElementById('reset-confirm-btn').classList.toggle('armed', v === (PROFILE ? PROFILE.board : ''));
+}
+function doReset() {
+  closeResetModal();
+  toast('Reset cancelled — destructive actions require server-side confirmation in production.');
+}
+
+function exportBackup() {
+  toast('Generating board backup…');
+  C.loadInventory(BOARD_SCHOOLS.map(bs => bs.school_name)).then(inv => {
+    const cartsById = {};
+    inv.carts.forEach(c => { cartsById[c.id] = c; });
+    const head = ['School','Cart','Serial','Model','Type','Mfr Year','AUE','Condition','Status'];
+    const rows = inv.assets.map(a => {
+      const cart = cartsById[a.cart_id];
+      const n = C.noteObj(a);
+      return [cart?cart.school:'', cart?cart.cart_number:'', a.serial_number, a.model,
+        C.detectDeviceType(a.model), a.purchase_year, n.aue||'', n.condition||'good',
+        C.isFlagged(a)?'Flagged':'In service'];
+    });
+    C.downloadCSV('dewi-board-backup.csv', head, rows);
+    toast('Board backup exported');
+  });
+}
+
+AssetsCore.boot({
+  allow: ['board'],
+  onReady: async function (ctx) {
+    PROFILE = ctx.profile;
+    // Sidebar
+    document.getElementById('sb-user').textContent = PROFILE.full_name || PROFILE.email;
+    document.getElementById('sb-avi').textContent = (PROFILE.full_name || PROFILE.email || '·').charAt(0).toUpperCase();
+
+    // Populate form
+    const prefs = PROFILE.prefs || {};
+    document.getElementById('b-name').value = PROFILE.board || '';
+    document.getElementById('b-admin').value = PROFILE.full_name || '';
+    document.getElementById('b-email').value = PROFILE.email || '';
+    if (prefs.province) document.getElementById('b-prov').value = prefs.province;
+    if (prefs.fiscal_year) document.getElementById('b-fy').value = prefs.fiscal_year;
+    if (prefs.budget) document.getElementById('b-budget').value = prefs.budget;
+
+    await loadSchools();
+    await loadAdmins();
+  }
+});
+</script>
+
+</body>
+</html>
