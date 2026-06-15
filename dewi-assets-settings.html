@@ -785,9 +785,9 @@ async function loadAdmins() {
       <td>${C.esc(inv.email)}</td>
       <td><span class="role-pill ${inv.role}">${inv.role === 'board' ? 'Board Admin' : 'School Admin'}</span></td>
       <td>${C.esc(inv.school||'— All schools')}</td>
-      <td>Invite pending</td>
+      <td>${expired ? '<span style="color:var(--health-bad);">Expired</span>' : 'Expires ' + C.fmtDate(inv.expires_at)}</td>
       <td><span class="stat-pill invited">${expired ? 'Expired' : 'Invited'}</span></td>
-      <td class="act"><button class="row-act danger" onclick="cancelInvite('${inv.id}')">Revoke</button></td>
+      <td class="act"><button class="row-act" onclick="navigator.clipboard.writeText('${inv.id}').then(()=>toast('Invite code copied'))">Copy code</button><button class="row-act danger" onclick="cancelInvite('${inv.id}')">Revoke</button></td>
     </tr>`;
   }).join('');
 }
