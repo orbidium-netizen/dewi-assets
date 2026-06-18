@@ -374,10 +374,10 @@ async function render(ctx) {
   // Glance card
   document.getElementById('gl-assign').textContent = assets.length ? (assigned/assets.length*100).toFixed(1) + '%' : '—';
   document.getElementById('gl-age').textContent = avgAge !== '—' ? avgAge + ' yr' : '—';
-  const added = assets.filter(a => a.created_at && new Date(a.created_at).getFullYear() === thisYear).length;
+  const added = assets.filter(a => a.added_at && new Date(a.added_at).getFullYear() === thisYear).length;
   document.getElementById('gl-added').textContent = '+' + added;
   document.getElementById('gl-flagged').textContent = flagged.length;
-  document.getElementById('gl-lost').textContent = assets.filter(a => C.noteObj(a).condition === 'lost').length;
+  document.getElementById('gl-lost').textContent = assets.filter(a => a.condition === 'lost').length;
   document.getElementById('gl-replace').textContent = '—'; // needs budget config from prefs
 }
 

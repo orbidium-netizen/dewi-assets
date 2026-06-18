@@ -354,7 +354,7 @@ function exportCSV(key) {
       const n = C.noteObj(a);
       const studs = students.filter(st => st.cart_id === a.cart_id && st.slot_number === a.slot_number);
       return [cart?cart.school:'', cart?cart.cart_number:'', a.serial_number, a.model,
-        C.detectDeviceType(a.model), a.purchase_year, n.aue||'', n.condition||'good',
+        C.detectDeviceType(a.model), a.purchase_year, '', a.condition||'good',
         studs.map(st=>st.username).join('; ')];
     });
     C.downloadCSV('dewi-full-inventory.csv', head, rows);
@@ -366,7 +366,7 @@ function exportCSV(key) {
     }).map(a => {
       const cart = CARTS_BY_ID[a.cart_id];
       return [cart?cart.school:'', a.serial_number, a.model, C.detectDeviceType(a.model),
-        C.noteObj(a).aue||'', cart?cart.cart_number:'', a.slot_number];
+        '', cart?cart.cart_number:'', a.slot_number];
     });
     C.downloadCSV('dewi-expiring-this-year.csv', head, rows);
   } else if (key === 'unassigned-devices') {

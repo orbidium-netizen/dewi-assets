@@ -577,7 +577,7 @@ function enrichedRows() {
     const assignedSet = new Set(STUDENTS.map(s => s.slot_number));
     const isAssigned = a.slot_number != null && assignedSet.has(a.slot_number);
     const isDamaged = cond === 'poor' || cond === 'damaged' || cond === 'broken';
-    const needsReplace = (st.months !== null && st.months <= 0) || n.flagged === true;
+    const needsReplace = st.months !== null && st.months <= 0;
     return { asset: a, n, ageYears, st, cond, studs, isAssigned, isDamaged, needsReplace };
   });
 }
@@ -646,7 +646,7 @@ function exportCartCSV() {
     return [
       a.slot_number, a.serial_number, a.model, C.detectDeviceType(a.model),
       a.purchase_year, C.deviceAgeYears(a) != null ? C.deviceAgeYears(a).toFixed(1)+'yr' : '',
-      n.aue || '', (n.condition||'good'), studs.map(s=>s.username).join('; ')
+      '', (a.condition||'good'), studs.map(s=>s.username).join('; ')
     ];
   });
   C.downloadCSV('dewi-cart-' + (CART ? CART.cart_number : 'export') + '.csv', head, csvRows);
@@ -673,7 +673,6 @@ function render(ctx) {
   document.getElementById('ch-title').innerHTML = C.esc(CART.cart_name || ('Cart ' + num)) + ' <em>Cart</em>';
 
   const ctx_parts = [];
-  if (CART.room_number) ctx_parts.push('<span><strong>' + C.esc(CART.room_number) + '</strong></span>');
   if (CART.shared_classes) ctx_parts.push('<span>Shared by <strong>' + C.esc(CART.shared_classes) + '</strong></span>');
   document.getElementById('ch-context').innerHTML = ctx_parts.join('<span class="sep">·</span>');
 

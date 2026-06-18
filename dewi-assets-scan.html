@@ -1092,7 +1092,7 @@ function renderChain(r) {
   const type = C.detectDeviceType(a.model);
   const ageYears = C.deviceAgeYears(a);
   const st = C.aueStatus(n.aue);
-  const cond = (n.condition || 'good');
+  const cond = C.condition(a);
   const condCap = cond.charAt(0).toUpperCase() + cond.slice(1);
 
   // Chain heading
@@ -1117,7 +1117,7 @@ function renderChain(r) {
   }
   // Node 3: Classroom
   if (nodes[2]) {
-    nodes[2].querySelector('.chain-value').textContent = cart && cart.room_number ? 'Room ' + cart.room_number : '—';
+    nodes[2].querySelector('.chain-value').textContent = '—';
     nodes[2].querySelector('.chain-meta').textContent = cart && cart.shared_classes ? 'Shared by ' + cart.shared_classes : '';
   }
   // Node 4: Slot

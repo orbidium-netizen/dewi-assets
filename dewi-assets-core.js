@@ -95,7 +95,7 @@ var AssetsCore = (function () {
     let assets = [], students = [];
     for (const ch of chunks) {
       const [aRes, sRes] = await Promise.all([
-        db.from('assets').select('*').in('cart_id', ch),
+        db.from('assets').select('*').in('cart_id', ch).eq('asset_type', 'device'),
         db.from('students').select('*').in('cart_id', ch)
       ]);
       if (aRes.error) console.error('assets load failed:', aRes.error.message);
@@ -123,6 +123,7 @@ var AssetsCore = (function () {
 
     const { data: hits, error: ae } = await db
       .from('assets').select('*')
+      .eq('asset_type', 'device')
       .ilike('serial_number', '%' + q + '%')
       .in('cart_id', carts.map(function (c) { return c.id; }))
       .limit(10);
@@ -196,17 +197,14 @@ var AssetsCore = (function () {
   }
 
   function condition(asset) {
-    const n = noteObj(asset);
-    return (n.condition || 'good').toLowerCase();
+    return ((asset && asset.condition) || 'good').toLowerCase();
   }
 
   /* A device counts as flagged if its condition is poor/damaged or its AUE has expired */
   function isFlagged(asset) {
     const c = condition(asset);
     if (c === 'poor' || c === 'damaged' || c === 'broken') return true;
-    const n = noteObj(asset);
-    if (n.flagged === true) return true;
-    const st = aueStatus(n.aue);
+    const st = aueStatus(noteObj(asset).aue);
     return st.months !== null && st.months <= 0;
   }
 

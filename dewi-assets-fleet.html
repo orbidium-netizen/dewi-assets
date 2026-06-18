@@ -337,7 +337,7 @@ AssetsCore.boot({
       const cart = cartsById[a.cart_id];
       const n = C.noteObj(a);
       const type = C.detectDeviceType(a.model);
-      const cond = (n.condition || 'good').toLowerCase();
+      const cond = (a.condition || 'good').toLowerCase();
       const aueY = C.aueYear(a);
       const age = C.deviceAgeYears(a);
       const flagged = C.isFlagged(a);

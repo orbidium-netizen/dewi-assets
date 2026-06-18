@@ -713,7 +713,7 @@ function renderCarts(views) {
           <div>
             <div class="cart-card-num">${C.esc(num)}</div>
             <div class="cart-card-name">${C.esc(v.cart.cart_name || ('Cart ' + num))}</div>
-            <div class="cart-card-meta">${C.esc([v.cart.room_number ? 'Room ' + v.cart.room_number : null, v.cart.shared_classes ? 'Shared by ' + v.cart.shared_classes : null].filter(Boolean).join(' · ') || v.cart.school || '')}</div>
+            <div class="cart-card-meta">${C.esc(v.cart.shared_classes ? 'Shared by ' + v.cart.shared_classes : v.cart.school || '')}</div>
           </div>
           <div class="cart-card-health ${v.health === 'good' ? '' : v.health}" title="${v.flagged ? v.flagged + ' flagged' : 'All healthy'}"></div>
         </div>
@@ -834,7 +834,7 @@ function render(ctx, inv) {
   document.getElementById('hm-assign').textContent = assets.length ? (assigned/assets.length*100).toFixed(1) + '%' : '—';
   const ages = assets.map(a => C.deviceAgeYears(a)).filter(v => v != null);
   document.getElementById('hm-age').textContent = ages.length ? (ages.reduce((x,y)=>x+y,0)/ages.length).toFixed(1) + ' yr' : '—';
-  const added = assets.filter(a => a.created_at && new Date(a.created_at).getFullYear() === now).length;
+  const added = assets.filter(a => a.added_at && new Date(a.added_at).getFullYear() === now).length;
   document.getElementById('hm-added').textContent = '+' + added;
   document.getElementById('hm-carts').textContent = carts.length;
   document.getElementById('hm-expired').textContent = assets.filter(a => {

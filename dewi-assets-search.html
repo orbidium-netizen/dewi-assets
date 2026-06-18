@@ -625,7 +625,7 @@ async function showResult(serial) {
     const nodes = chain.querySelectorAll('.sr-chain-node');
     if (nodes[0]) nodes[0].querySelector('.sr-chain-val').textContent = cart ? cart.school : '—';
     if (nodes[1]) nodes[1].querySelector('.sr-chain-val').textContent = cart ? 'Cart ' + String(cart.cart_number||'').padStart(2,'0') + (cart.cart_name ? ' · ' + cart.cart_name : '') : '—';
-    if (nodes[2]) nodes[2].querySelector('.sr-chain-val').textContent = cart && cart.room_number ? 'Room ' + cart.room_number : '—';
+    if (nodes[2]) nodes[2].querySelector('.sr-chain-val').textContent = '—';
     if (nodes[3]) nodes[3].querySelector('.sr-chain-val').textContent = a.slot_number != null ? 'Slot ' + String(a.slot_number).padStart(2,'0') : '—';
     if (nodes[4]) nodes[4].querySelector('.sr-chain-val').textContent = studs.length ? studs.map(s => s.username).join(', ') : 'Unassigned';
   }
