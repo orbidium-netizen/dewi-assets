@@ -95,7 +95,7 @@ var AssetsCore = (function () {
     let assets = [], students = [];
     for (const ch of chunks) {
       const [aRes, sRes] = await Promise.all([
-        db.from('assets').select('*').in('cart_id', ch).eq('asset_type', 'device'),
+        db.from('assets').select('*').in('cart_id', ch).in('asset_type', ['chromebook', 'device']),
         db.from('students').select('*').in('cart_id', ch)
       ]);
       if (aRes.error) console.error('assets load failed:', aRes.error.message);
@@ -123,7 +123,7 @@ var AssetsCore = (function () {
 
     const { data: hits, error: ae } = await db
       .from('assets').select('*')
-      .eq('asset_type', 'device')
+      .in('asset_type', ['chromebook', 'device'])
       .ilike('serial_number', '%' + q + '%')
       .in('cart_id', carts.map(function (c) { return c.id; }))
       .limit(10);
