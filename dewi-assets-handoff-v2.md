@@ -561,6 +561,45 @@ cart data, not zero rows.
 
 ---
 
+### 2026-08-26 — Afternoon close-out: domain cutover complete, login hero, Phase 8 done
+
+#### What shipped since the design-polish addendum
+
+- **Sidebar logout** — confirmed live via real sign-out/sign-in click-through (not just DB-layer verification).
+- **Phase 6 (Cart Naming Planner)** — confirmed live via real click-through: signed out, signed back in, clicked the new "Plan Carts" nav item, used it.
+- **Design-polish commit `97ee605`** pushed and independently re-verified (not just trusted from the report): confirmed against `origin/main` source directly, and confirmed the `flat-type-hierarchy` suppression on `board.html` is real, correctly scoped to that one file only, and the hook now passes cleanly.
+- **Domain cutover, mostly complete:**
+  - `dewiassets.com` and `www.dewiassets.com` both attached as Cloudflare Pages custom domains, both **Active** with SSL enabled.
+  - **Root-path 404 discovered and fixed** — this was a pre-existing gap, not something caused by tonight's work: `dewi-assets.pages.dev/` (bare root) had *always* 404'd because no `index.html` existed at the repo root; nobody had noticed because every real entry point is a named page (`/dewi-assets-login`, etc.). Fixed via a Cloudflare Pages `_redirects` file (`/ /dewi-assets-login 302`) — an edge-level HTTP redirect, not a client-side meta-refresh. Commit `5117f0a`. Verified via real `curl -v` showing `302` + correct `Location` header on both domains.
+  - Login page confirmed working visually on `dewiassets.com` (real screenshot, form renders correctly, hero copy/testimonial in place).
+- **Login hero image** (`dewi-assets-login-hero.jpg`) — real photo wired in, replacing the `admin-desk.png` placeholder. Uses the identical espresso-wash wrapper technique as the dashboard hero (`.login-photo-img` wrapper with `background-blend-mode: overlay` + dual gradient, copied from `.dash-hero-img`). Fabricated Margaret Chen testimonial removed; replaced with unattributed product tagline: *"Every Chromebook has a home. Every cart has an owner. No more walking the halls to find out where either one is."* Commit `c51c123`.
+
+#### Phase 8 — now fully complete
+
+The Supabase Auth redirect-URL gap flagged earlier in this session is closed. `https://dewiassets.com` and `https://www.dewiassets.com` were added manually via the dashboard (Authentication → URL Configuration), verified against a real screenshot: all 8 pre-existing entries untouched, 2 new entries present, **Total URLs: 10** confirmed. Note: Claude Code's own "expected list" of pre-existing entries was inaccurate (looked fabricated rather than actually checked) — the verification that mattered was the direct visual confirmation, not Claude Code's self-report.
+
+**Phase 8 (domain cutover) is now fully done:** custom domains active with SSL, root-path redirect working, Auth redirect URLs correctly configured.
+
+#### Still open (small, low-risk, previously identified)
+
+1. Three repeated design-polish fixes, same approved treatment, not yet applied to their files:
+   - `search.html` — toast bounce-easing (same as `reports.html`)
+   - `settings.html` — toast bounce-easing (inline style)
+   - `school.html` — age-legend side-tab (same as dashboard's, pre-fix)
+2. `settings.html` "Danger zone" card border — decision made (swap to `border-top: 2px solid var(--burgundy)`, matching the cart-header pattern), not yet built.
+
+#### Full remaining phase list (unchanged)
+
+- Phase 2 — office role + consumables
+- Phase 3 — board onboarding wizard (also seeds `board_schools` so the board test account isn't empty)
+- Phase 5 — photo-scan port
+- Phase 7 — `school.html` full data wiring
+- Phase 9 — pre-pilot QA pass
+- GA4 tracking snippet rollout (pending: Chris creating the GA4 property and getting a Measurement ID)
+- GSC — deliberately deferred until a public landing page exists
+
+---
+
 ## Why this doc exists
 
 Dewi Assets was designed in an earlier Dewi chat ("Dewi 7," July 19), but the actual
