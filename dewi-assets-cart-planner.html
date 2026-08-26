@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cart Planner — Dewi Assets</title>
+<link rel="stylesheet" href="dewi.css">
+<link rel="stylesheet" href="dewi-assets.css">
+
+<script>
+let db = null;
+function initSupabase() {
+  try {
+    const { createClient } = supabase;
+    db = createClient(
+      'https://ivdkipygpasvowigarfb.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2ZGtpcHlncGFzdm93aWdhcmZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMzA2NzcsImV4cCI6MjA5MjcwNjY3N30.qKN6tCqyyIIVoPAVl1o2_2gtUkfBh2aBWDP_sIDcxgE'
+    );
+  } catch(e) { console.error('Supabase init failed:', e.message); }
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="initSupabase()"></script>
+
+<style>
+/* ═══ Sidebar (matches dashboard) ═══ */
+.sidebar { background: #2A1F12; box-shadow: 4px 0 32px rgba(42, 31, 18, 0.30); }
+.sidebar-logo { padding: 28px 24px 20px; }
+.assets-logo .word { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 700; font-style: italic; color: var(--paper); line-height: 1; letter-spacing: -0.5px; }
+.assets-logo .word .amp { color: #D4A76A; }
+.assets-logo .sub { font-family: 'Jost', sans-serif; font-size: 9.5px; font-weight: 600; letter-spacing: 0.26em; text-transform: uppercase; color: rgba(245, 239, 228, 0.42); margin-top: 8px; }
+.sidebar-school { margin: 16px 14px 0; padding: 12px 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; }
+.sidebar-school .lbl { font-size: 9px; font-weight: 600; letter-spacing: 0.20em; text-transform: uppercase; color: rgba(245,239,228,0.4); margin-bottom: 4px; }
+.sidebar-school .name { font-family: 'Cormorant Garamond', serif; font-size: 16px; font-weight: 600; color: var(--paper); line-height: 1.2; }
+.sidebar-school .role { font-size: 11px; color: rgba(245,239,228,0.55); margin-top: 2px; }
+.sidebar .nav-item.active { background: rgba(212, 167, 106, 0.12); color: var(--paper); }
+.sidebar .nav-item.active .nav-dot { background: #D4A76A !important; box-shadow: 0 0 0 3px rgba(212, 167, 106, 0.22) !important; }
+.sidebar .nav-item.active::before { background: #D4A76A !important; }
+.sidebar-user { margin: 0 14px 16px; padding: 12px 14px; background: rgba(0,0,0,0.18); border-radius: 12px; display: flex; align-items: center; gap: 10px; }
+.sidebar-user .avi { width: 32px; height: 32px; border-radius: 50%; background: #D4A76A; color: #2A1F12; display: flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+.sidebar-user .info { min-width: 0; flex: 1; }
+.sidebar-user .name { font-size: 12px; font-weight: 600; color: var(--paper); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sidebar-user .role { font-size: 10px; color: rgba(245,239,228,0.5); letter-spacing: 0.04em; }
+.sidebar-nav .nav-item:last-child { margin-top: 0; padding-top: 11px; border-top: none; }
+
+/* ═══ Wizard header ═══ */
+.wiz-header { margin-bottom: 28px; }
+.wiz-header h1 { font-family: 'Cormorant Garamond', serif; font-size: 30px; font-weight: 600; font-style: italic; color: var(--ink); letter-spacing: -0.5px; margin-bottom: 4px; }
+.wiz-header .sub { font-size: 13px; color: var(--ink-soft); }
+
+/* ═══ Step indicator ═══ */
+.wiz-steps {
+  display: flex;
+  align-items: center;
+  margin-bottom: 32px;
+  max-width: 560px;
+}
+.wiz-step { display: flex; flex-direction: column; align-items: center; gap: 7px; flex-shrink: 0; }
+.wiz-step-circle {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 600;
+  transition: all 0.2s;
+}
+.wiz-step.done .wiz-step-circle { background: var(--tobacco); color: var(--paper); box-shadow: 0 0 0 3px rgba(212,167,106,0.2); }
+.wiz-step.active .wiz-step-circle { background: var(--tobacco); color: var(--paper); box-shadow: 0 0 0 4px rgba(212,167,106,0.25); }
+.wiz-step.locked .wiz-step-circle { background: var(--paper-warm); color: var(--ink-ghost); border: 1.5px solid var(--paper-deep); }
+.wiz-step-label { font-family: 'Jost', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; white-space: nowrap; }
+.wiz-step.done .wiz-step-label { color: var(--tobacco); }
+.wiz-step.active .wiz-step-label { color: var(--ink); }
+.wiz-step.locked .wiz-step-label { color: var(--ink-ghost); }
+.wiz-step-line { flex: 1; height: 1.5px; background: var(--paper-deep); margin: 0 12px 20px; min-width: 40px; transition: background 0.2s; }
+.wiz-step-line.done { background: rgba(212,167,106,0.4); }
+
+/* ═══ Panels ═══ */
+.wiz-panel { display: none; }
+.wiz-panel.active { display: block; }
+
+/* ═══ Step 1 — Intro ═══ */
+.wiz-intro-card {
+  background: var(--cream);
+  border: 1px solid var(--paper-deep);
+  border-radius: var(--r-card);
+  padding: 36px 40px;
+  max-width: 640px;
+  box-shadow: var(--shadow-sm);
+}
+.wiz-intro-card h2 { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600; color: var(--ink); letter-spacing: -0.4px; margin-bottom: 16px; }
+.wiz-intro-card h2 em { font-style: italic; color: var(--tobacco); }
+.wiz-intro-card p { font-size: 13.5px; color: var(--ink-mid); line-height: 1.65; margin-bottom: 14px; }
+.wiz-intro-steps { margin: 20px 0 24px; display: flex; flex-direction: column; gap: 10px; }
+.wiz-intro-step { display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px; background: var(--paper); border-radius: 10px; border: 1px solid var(--paper-warm); }
+.wiz-intro-step .n { width: 24px; height: 24px; border-radius: 50%; background: var(--tobacco); color: var(--paper); display: flex; align-items: center; justify-content: center; font-family: 'Jost', sans-serif; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+.wiz-intro-step .body strong { display: block; font-family: 'Jost', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); margin-bottom: 2px; }
+.wiz-intro-step .body span { font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
+
+/* ═══ Step 2 — Plan carts ═══ */
+.wiz-section { background: var(--cream); border: 1px solid var(--paper-deep); border-radius: var(--r-card); overflow: hidden; margin-bottom: 18px; box-shadow: var(--shadow-sm); max-width: 700px; }
+.wiz-section-head { padding: 20px 28px 16px; border-bottom: 1px solid var(--paper-warm); display: flex; align-items: center; justify-content: space-between; }
+.wiz-section-head h3 { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; color: var(--ink); }
+.wiz-section-head .badge { font-family: 'Jost', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 10px; border-radius: var(--r-pill); background: var(--paper-warm); color: var(--ink-ghost); border: 1px solid var(--paper-deep); }
+.wiz-section-body { padding: 22px 28px; }
+
+/* Naming style chooser */
+.style-chooser { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.style-option { position: relative; }
+.style-option input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+.style-option label { display: flex; flex-direction: column; padding: 18px 20px; background: var(--paper); border: 2px solid var(--paper-deep); border-radius: 12px; cursor: pointer; transition: all 0.15s; }
+.style-option input:checked + label { border-color: var(--tobacco); background: rgba(212,167,106,0.06); }
+.style-option label .sty-title { font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+.style-option label .sty-example { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; font-style: italic; color: var(--tobacco); line-height: 1; margin-bottom: 6px; }
+.style-option label .sty-desc { font-size: 11.5px; color: var(--ink-soft); line-height: 1.45; }
+
+/* Plans list */
+.plans-list { display: flex; flex-direction: column; }
+.plan-row { display: flex; align-items: center; gap: 12px; padding: 13px 28px; border-bottom: 1px solid var(--paper-warm); }
+.plan-row:last-child { border-bottom: none; }
+.plan-label { font-family: 'Cormorant Garamond', serif; font-size: 19px; font-weight: 700; font-style: italic; color: var(--tobacco); min-width: 90px; }
+.plan-details { flex: 1; min-width: 0; }
+.plan-details .room { font-size: 13px; font-weight: 600; color: var(--ink); }
+.plan-details .shared { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+.plan-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.plan-btn-edit, .plan-btn-del { padding: 5px 12px; font-family: 'Jost', sans-serif; font-size: 11px; font-weight: 600; border-radius: var(--r-pill); cursor: pointer; border: 1.5px solid var(--paper-deep); background: var(--paper); color: var(--ink-mid); transition: all 0.15s; }
+.plan-btn-edit:hover { border-color: var(--tobacco); color: var(--tobacco); }
+.plan-btn-del:hover { border-color: #E89090; color: #B85050; background: #FEF4F4; }
+
+/* Inline edit form */
+.plan-edit-wrap { padding: 0 28px 14px; display: none; }
+.plan-edit-wrap.open { display: block; }
+.plan-edit-form { padding: 16px 18px; background: var(--paper); border-radius: 10px; border: 1px solid var(--paper-deep); }
+.plan-edit-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.plan-edit-field label { display: block; font-family: 'Jost', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-ghost); margin-bottom: 5px; }
+.plan-edit-field input { width: 100%; box-sizing: border-box; padding: 8px 12px; font-family: 'Jost', sans-serif; font-size: 13px; color: var(--ink); background: var(--cream); border: 1.5px solid var(--paper-deep); border-radius: 8px; outline: none; transition: border-color 0.15s; }
+.plan-edit-field input:focus { border-color: var(--tobacco); }
+.plan-edit-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* Add cart form */
+.add-cart-form { padding: 20px 28px; background: var(--paper); border-top: 1px dashed var(--paper-deep); }
+.add-form-title { font-family: 'Jost', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-ghost); margin-bottom: 14px; }
+.add-form-row { display: grid; grid-template-columns: auto 1fr 1fr auto; gap: 12px; align-items: end; }
+.add-form-field { display: flex; flex-direction: column; gap: 5px; }
+.add-form-field label { font-family: 'Jost', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-ghost); }
+.add-form-field input { padding: 10px 14px; font-family: 'Jost', sans-serif; font-size: 13px; color: var(--ink); background: var(--cream); border: 1.5px solid var(--paper-deep); border-radius: 8px; outline: none; transition: border-color 0.15s; }
+.add-form-field input:focus { border-color: var(--tobacco); }
+.next-label-display { padding: 10px 14px; font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 700; font-style: italic; color: var(--tobacco); background: var(--paper-warm); border: 1.5px solid var(--paper-deep); border-radius: 8px; min-width: 88px; text-align: center; }
+.plans-empty { padding: 32px 28px; text-align: center; }
+.plans-empty p { font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
+
+/* ═══ Step 3 — Summary ═══ */
+.summary-card { background: var(--cream); border: 1px solid var(--paper-deep); border-radius: var(--r-card); max-width: 700px; box-shadow: var(--shadow-sm); overflow: hidden; }
+.summary-head { padding: 28px 36px 20px; border-bottom: 1px solid var(--paper-warm); }
+.summary-head .school-name { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600; font-style: italic; color: var(--ink); margin-bottom: 8px; }
+.summary-meta { font-size: 12px; color: var(--ink-soft); display: flex; gap: 0; flex-wrap: wrap; }
+.summary-meta-item { padding-right: 16px; margin-right: 16px; border-right: 1px solid var(--paper-deep); }
+.summary-meta-item:last-child { border-right: none; padding-right: 0; margin-right: 0; }
+.summary-table { width: 100%; border-collapse: collapse; }
+.summary-table th { padding: 10px 36px; font-family: 'Jost', sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-ghost); background: var(--paper); border-bottom: 1px solid var(--paper-deep); text-align: left; }
+.summary-table td { padding: 14px 36px; border-bottom: 1px solid var(--paper-warm); vertical-align: top; }
+.summary-table tr:last-child td { border-bottom: none; }
+.sum-cart-name { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 700; font-style: italic; color: var(--tobacco); }
+.sum-room { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.sum-shared { font-size: 12px; color: var(--ink-soft); }
+.summary-foot { padding: 20px 36px; background: var(--paper); border-top: 1px solid var(--paper-warm); display: flex; align-items: center; gap: 12px; }
+.summary-note { flex: 1; font-size: 12px; color: var(--ink-ghost); line-height: 1.5; }
+
+/* ═══ Print ═══ */
+@media print {
+  .sidebar, .topbar, .wiz-header, .wiz-steps, .summary-foot { display: none !important; }
+  .main { margin-left: 0 !important; }
+  .content { padding: 0 !important; }
+  .summary-card { box-shadow: none; border: 1px solid #ccc; max-width: 100%; }
+}
+
+@media (max-width: 640px) {
+  .style-chooser { grid-template-columns: 1fr; }
+  .add-form-row { grid-template-columns: 1fr 1fr; }
+  .wiz-intro-card { padding: 24px 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═════════ Sidebar ═════════ -->
+<aside class="sidebar">
+  <a href="dewi-assets-dashboard.html" class="sidebar-logo assets-logo" style="text-decoration:none">
+    <div class="word">Dewi<span class="amp"> Assets</span></div>
+    <div class="sub">Administration</div>
+  </a>
+
+  <div class="sidebar-school">
+    <div class="lbl">Signed in to</div>
+    <div class="name" id="sb-school">—</div>
+    <div class="role" id="sb-school-sub">School Admin</div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a class="nav-item" href="dewi-assets-dashboard.html" style="text-decoration:none"><div class="nav-dot"></div>Dashboard</a>
+    <a class="nav-item" href="dewi-assets-dashboard.html#carts" style="text-decoration:none"><div class="nav-dot"></div>Carts</a>
+    <a class="nav-item" href="dewi-assets-scan.html" style="text-decoration:none"><div class="nav-dot"></div>Devices</a>
+    <a class="nav-item" href="dewi-assets-reports.html" style="text-decoration:none"><div class="nav-dot"></div>Reports</a>
+    <a class="nav-item active" href="dewi-assets-cart-planner.html" style="text-decoration:none"><div class="nav-dot"></div>Plan Carts</a>
+  </nav>
+
+  <div class="sidebar-user">
+    <div class="avi" id="sb-avi">·</div>
+    <div class="info">
+      <div class="name" id="sb-user">—</div>
+      <div class="role">School Admin</div>
+    </div>
+    <button class="sb-signout" onclick="AssetsCore.signOutAdmin()">Sign out</button>
+  </div>
+</aside>
+
+<!-- ═════════ Main ═════════ -->
+<main class="main">
+
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" style="font-style:italic;">Cart Naming Planner</div>
+      <div style="font-family:'Jost',sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-ghost);margin-top:2px" id="tb-date"></div>
+    </div>
+    <div class="topbar-right">
+      <a href="dewi-assets-dashboard.html" class="btn btn-secondary btn-sm" style="text-decoration:none">← Dashboard</a>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <div class="wiz-header">
+      <h1>Cart <em>Naming</em> Planner</h1>
+      <div class="sub">Decide how carts are named, where they live, and who shares them — before teachers touch a cart in Dewi.</div>
+    </div>
+
+    <!-- Step indicator -->
+    <div class="wiz-steps">
+      <div class="wiz-step active" id="ws-1">
+        <div class="wiz-step-circle" id="wsc-1">1</div>
+        <div class="wiz-step-label">Intro</div>
+      </div>
+      <div class="wiz-step-line" id="wsl-12"></div>
+      <div class="wiz-step locked" id="ws-2">
+        <div class="wiz-step-circle" id="wsc-2">2</div>
+        <div class="wiz-step-label">Plan carts</div>
+      </div>
+      <div class="wiz-step-line" id="wsl-23"></div>
+      <div class="wiz-step locked" id="ws-3">
+        <div class="wiz-step-circle" id="wsc-3">3</div>
+        <div class="wiz-step-label">Summary</div>
+      </div>
+    </div>
+
+    <!-- ═══ Panel 1: Intro ═══ -->
+    <div class="wiz-panel active" id="panel-1">
+      <div class="wiz-intro-card">
+        <h2>Plan before teachers <em>start naming.</em></h2>
+        <p>Right now, every cart in Dewi is named by the teacher who scans it first — which can lead to inconsistencies like "Cart 1", "cart1", "CART 01", or simply no name at all. This wizard lets you set the convention before any teacher touches a cart.</p>
+        <p>The plan you create here is a reference document — it does not automatically name carts in Dewi. Teachers type the exact same name into Dewi when they scan devices, matching your plan.</p>
+        <div class="wiz-intro-steps">
+          <div class="wiz-intro-step">
+            <div class="n">1</div>
+            <div class="body">
+              <strong>Pick a naming style</strong>
+              <span>Numeric (Cart 1, Cart 2…) or alphabetic (Cart A, Cart B…). This choice is locked in for your school once you add the first cart.</span>
+            </div>
+          </div>
+          <div class="wiz-intro-step">
+            <div class="n">2</div>
+            <div class="body">
+              <strong>Add each cart</strong>
+              <span>For each cart: the room it lives in, and any sharing arrangement (e.g. "shared with 6-5 Murphy"). Labels are auto-generated in sequence — no free typing.</span>
+            </div>
+          </div>
+          <div class="wiz-intro-step">
+            <div class="n">3</div>
+            <div class="body">
+              <strong>Hand off the summary</strong>
+              <span>Print or share a clean reference. Teachers type the exact same cart names into Dewi — no guessing, no typos.</span>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:24px;">
+          <button class="btn btn-tobacco" onclick="goStep(2)" style="padding:10px 26px;">Begin planning →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ Panel 2: Plan carts ═══ -->
+    <div class="wiz-panel" id="panel-2">
+
+      <!-- Naming style -->
+      <div class="wiz-section">
+        <div class="wiz-section-head">
+          <h3>Naming style</h3>
+          <div class="badge" id="style-badge" style="display:none;">Locked in</div>
+        </div>
+        <div class="wiz-section-body">
+          <div class="style-chooser" id="style-chooser">
+            <div class="style-option">
+              <input type="radio" name="naming_style" id="style-numeric" value="numeric" checked>
+              <label for="style-numeric">
+                <span class="sty-title">Numeric</span>
+                <span class="sty-example">Cart 1, Cart 2…</span>
+                <span class="sty-desc">Sequential numbers. Easy to extend — just keep counting.</span>
+              </label>
+            </div>
+            <div class="style-option">
+              <input type="radio" name="naming_style" id="style-alpha" value="alphabetic">
+              <label for="style-alpha">
+                <span class="sty-title">Alphabetic</span>
+                <span class="sty-example">Cart A, Cart B…</span>
+                <span class="sty-desc">Letter labels. Common in smaller schools where carts are known by letter.</span>
+              </label>
+            </div>
+          </div>
+          <div id="style-locked-notice" style="display:none;font-size:12.5px;color:var(--ink-soft);padding:2px 0;">
+            Using <strong id="style-locked-name"></strong> — locked in by your first cart plan. Remove all plans to reset.
+          </div>
+        </div>
+      </div>
+
+      <!-- Cart plans list + add form -->
+      <div class="wiz-section">
+        <div class="wiz-section-head">
+          <h3>Cart plans</h3>
+          <div class="badge" id="plans-count-badge">0 planned</div>
+        </div>
+
+        <div id="plans-body"></div>
+
+        <div class="add-cart-form">
+          <div class="add-form-title">Add next cart to plan</div>
+          <div class="add-form-row">
+            <div class="add-form-field">
+              <label>Cart label</label>
+              <div class="next-label-display" id="next-label-display">—</div>
+            </div>
+            <div class="add-form-field">
+              <label>Room</label>
+              <input type="text" id="add-room" placeholder="e.g. 6-4" maxlength="60"
+                     onkeydown="if(event.key==='Enter'){event.preventDefault();addCart();}">
+            </div>
+            <div class="add-form-field">
+              <label>Shared with <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:9px;">(optional)</span></label>
+              <input type="text" id="add-shared" placeholder="e.g. shared with 6-5"
+                     maxlength="120"
+                     onkeydown="if(event.key==='Enter'){event.preventDefault();addCart();}">
+            </div>
+            <div class="add-form-field">
+              <label>&nbsp;</label>
+              <button class="btn btn-tobacco" id="add-cart-btn" onclick="addCart()"
+                      style="height:42px;padding:0 18px;white-space:nowrap;">+ Add cart</button>
+            </div>
+          </div>
+          <div id="add-error" style="display:none;margin-top:8px;font-size:12px;color:#C06060;"></div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div style="display:flex;gap:12px;align-items:center;max-width:700px;margin-bottom:40px;">
+        <button class="btn btn-secondary" onclick="goStep(1)">← Back</button>
+        <button class="btn btn-tobacco" id="finish-btn" onclick="goStep(3)" disabled
+                style="opacity:0.4;">View summary →</button>
+        <span id="finish-hint" style="font-size:12px;color:var(--ink-ghost);">Add at least one cart to continue.</span>
+      </div>
+    </div>
+
+    <!-- ═══ Panel 3: Summary ═══ -->
+    <div class="wiz-panel" id="panel-3">
+      <div class="summary-card">
+        <div class="summary-head">
+          <div class="school-name" id="sum-school">—</div>
+          <div class="summary-meta">
+            <div class="summary-meta-item" id="sum-style">Numeric naming</div>
+            <div class="summary-meta-item" id="sum-count">0 carts planned</div>
+            <div class="summary-meta-item" id="sum-date"></div>
+          </div>
+        </div>
+        <table class="summary-table">
+          <thead>
+            <tr>
+              <th>Cart</th>
+              <th>Room</th>
+              <th>Shared with</th>
+            </tr>
+          </thead>
+          <tbody id="summary-tbody"></tbody>
+        </table>
+        <div class="summary-foot">
+          <div class="summary-note">
+            Hand this to teachers — they type the exact cart name into Dewi when scanning devices. Names must match this plan exactly.
+          </div>
+          <button class="btn btn-secondary" onclick="goStep(2)" style="white-space:nowrap;">← Edit plans</button>
+          <button class="btn btn-tobacco" onclick="window.print()" style="white-space:nowrap;">Print summary</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script src="dewi-assets-core.js"></script>
+<script>
+const C = AssetsCore;
+
+let SCHOOL = '';
+let PLANS = [];
+let STYLE = null; // 'numeric' | 'alphabetic' | null
+
+// ── Step navigation ──
+
+function goStep(n) {
+  if (n === 3 && !PLANS.length) return;
+  for (let i = 1; i <= 3; i++) {
+    const ws = document.getElementById('ws-' + i);
+    const wsc = document.getElementById('wsc-' + i);
+    ws.className = 'wiz-step ' + (i < n ? 'done' : i === n ? 'active' : 'locked');
+    wsc.textContent = i < n ? '✓' : String(i);
+  }
+  document.getElementById('wsl-12').className = 'wiz-step-line' + (n > 1 ? ' done' : '');
+  document.getElementById('wsl-23').className = 'wiz-step-line' + (n > 2 ? ' done' : '');
+  document.querySelectorAll('.wiz-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + n).classList.add('active');
+  if (n === 3) renderSummary();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Sequence helpers ──
+
+function nextNumericLabel(plans) {
+  const used = new Set(
+    plans.map(p => { const m = p.cart_label.match(/^Cart (\d+)$/i); return m ? +m[1] : 0; }).filter(n => n > 0)
+  );
+  let i = 1;
+  while (used.has(i)) i++;
+  return 'Cart ' + i;
+}
+
+function nextAlphaLabel(plans) {
+  const used = new Set(
+    plans.map(p => { const m = p.cart_label.match(/^Cart ([A-Z])$/i); return m ? m[1].toUpperCase() : null; }).filter(Boolean)
+  );
+  for (const ch of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+    if (!used.has(ch)) return 'Cart ' + ch;
+  }
+  return null;
+}
+
+function getNextLabel() {
+  const sty = STYLE || (document.querySelector('input[name="naming_style"]:checked')?.value) || 'numeric';
+  return sty === 'numeric' ? nextNumericLabel(PLANS) : (nextAlphaLabel(PLANS) || null);
+}
+
+// ── Plans list ──
+
+function sortPlans(plans) {
+  return plans.slice().sort((a, b) => {
+    const ma = a.cart_label.match(/(\d+|[A-Z])$/i), mb = b.cart_label.match(/(\d+|[A-Z])$/i);
+    if (!ma || !mb) return 0;
+    return /\d/.test(ma[1]) ? +ma[1] - +mb[1] : ma[1].localeCompare(mb[1]);
+  });
+}
+
+function renderPlans() {
+  const count = document.getElementById('plans-count-badge');
+  const finishBtn = document.getElementById('finish-btn');
+  const finishHint = document.getElementById('finish-hint');
+  const addBtn = document.getElementById('add-cart-btn');
+  const nl = getNextLabel();
+
+  count.textContent = PLANS.length + ' planned';
+  document.getElementById('next-label-display').textContent = nl || 'A–Z used';
+
+  const hasPlans = PLANS.length > 0;
+  finishBtn.disabled = !hasPlans;
+  finishBtn.style.opacity = hasPlans ? '1' : '0.4';
+  finishHint.style.display = hasPlans ? 'none' : '';
+  addBtn.disabled = !nl;
+  addBtn.style.opacity = nl ? '1' : '0.5';
+
+  const body = document.getElementById('plans-body');
+
+  if (!PLANS.length) {
+    body.innerHTML = '<div class="plans-empty"><p>No carts planned yet. Use the form below to add your first cart.</p></div>';
+    return;
+  }
+
+  const sorted = sortPlans(PLANS);
+  body.innerHTML = sorted.map(plan => `
+    <div class="plan-row" id="pr-${plan.id}">
+      <div class="plan-label">${C.esc(plan.cart_label)}</div>
+      <div class="plan-details">
+        <div class="room">${C.esc(plan.room || '—')}</div>
+        ${plan.shared_with ? `<div class="shared">${C.esc(plan.shared_with)}</div>` : ''}
+      </div>
+      <div class="plan-actions">
+        <button class="plan-btn-edit" onclick="openEdit('${plan.id}')">Edit</button>
+        <button class="plan-btn-del" onclick="deletePlan('${plan.id}')">Remove</button>
+      </div>
+    </div>
+    <div class="plan-edit-wrap" id="ew-${plan.id}">
+      <div class="plan-edit-form">
+        <div class="plan-edit-row">
+          <div class="plan-edit-field">
+            <label>Room</label>
+            <input type="text" id="ef-room-${plan.id}" value="${C.esc(plan.room || '')}" placeholder="e.g. 6-4" maxlength="60">
+          </div>
+          <div class="plan-edit-field">
+            <label>Shared with (optional)</label>
+            <input type="text" id="ef-shared-${plan.id}" value="${C.esc(plan.shared_with || '')}" placeholder="e.g. shared with 6-5" maxlength="120">
+          </div>
+        </div>
+        <div class="plan-edit-actions">
+          <button class="btn btn-secondary btn-sm" onclick="closeEdit('${plan.id}')">Cancel</button>
+          <button class="btn btn-tobacco btn-sm" onclick="saveEdit('${plan.id}')">Save</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function openEdit(id) {
+  document.querySelectorAll('.plan-edit-wrap').forEach(f => f.classList.remove('open'));
+  document.getElementById('ew-' + id).classList.add('open');
+  document.getElementById('ef-room-' + id).focus();
+}
+
+function closeEdit(id) {
+  document.getElementById('ew-' + id).classList.remove('open');
+}
+
+async function saveEdit(id) {
+  const room = document.getElementById('ef-room-' + id).value.trim();
+  const shared_with = document.getElementById('ef-shared-' + id).value.trim();
+  const { error } = await db.from('cart_plans')
+    .update({ room: room || null, shared_with: shared_with || null, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) { alert('Save failed: ' + error.message); return; }
+  const idx = PLANS.findIndex(p => p.id === id);
+  if (idx >= 0) { PLANS[idx].room = room || null; PLANS[idx].shared_with = shared_with || null; }
+  closeEdit(id);
+  renderPlans();
+}
+
+async function deletePlan(id) {
+  if (!confirm('Remove this cart plan?')) return;
+  const { error } = await db.from('cart_plans').delete().eq('id', id);
+  if (error) { alert('Remove failed: ' + error.message); return; }
+  PLANS = PLANS.filter(p => p.id !== id);
+  if (!PLANS.length) { STYLE = null; updateStyleUI(); }
+  renderPlans();
+}
+
+async function addCart() {
+  const nl = getNextLabel();
+  if (!nl) return;
+  const room = document.getElementById('add-room').value.trim();
+  const shared_with = document.getElementById('add-shared').value.trim();
+  const errEl = document.getElementById('add-error');
+  errEl.style.display = 'none';
+
+  const sty = STYLE || (document.querySelector('input[name="naming_style"]:checked')?.value) || 'numeric';
+  const { data: { user } } = await db.auth.getUser();
+
+  const { data, error } = await db.from('cart_plans').insert({
+    school: SCHOOL,
+    naming_style: sty,
+    cart_label: nl,
+    room: room || null,
+    shared_with: shared_with || null,
+    created_by: user?.id
+  }).select().single();
+
+  if (error) { errEl.textContent = error.message; errEl.style.display = ''; return; }
+
+  PLANS.push(data);
+  if (!STYLE) { STYLE = sty; updateStyleUI(); }
+  document.getElementById('add-room').value = '';
+  document.getElementById('add-shared').value = '';
+  document.getElementById('add-room').focus();
+  renderPlans();
+}
+
+function updateStyleUI() {
+  const chooser = document.getElementById('style-chooser');
+  const badge = document.getElementById('style-badge');
+  const notice = document.getElementById('style-locked-notice');
+
+  if (STYLE) {
+    chooser.style.display = 'none';
+    badge.style.display = '';
+    notice.style.display = '';
+    document.getElementById('style-locked-name').textContent =
+      STYLE === 'numeric' ? 'numeric naming (Cart 1, Cart 2…)' : 'alphabetic naming (Cart A, Cart B…)';
+    const r = document.querySelector(`input[name="naming_style"][value="${STYLE}"]`);
+    if (r) r.checked = true;
+  } else {
+    chooser.style.display = '';
+    badge.style.display = 'none';
+    notice.style.display = 'none';
+  }
+}
+
+// ── Summary ──
+
+function renderSummary() {
+  const sty = STYLE || 'numeric';
+  document.getElementById('sum-school').textContent = SCHOOL;
+  document.getElementById('sum-style').textContent =
+    sty === 'numeric' ? 'Numeric naming (Cart 1, 2…)' : 'Alphabetic naming (Cart A, B…)';
+  document.getElementById('sum-count').textContent =
+    PLANS.length + (PLANS.length === 1 ? ' cart' : ' carts') + ' planned';
+  document.getElementById('sum-date').textContent =
+    new Date().toLocaleDateString('en-CA', { month: 'long', day: 'numeric', year: 'numeric' });
+
+  document.getElementById('summary-tbody').innerHTML = sortPlans(PLANS).map(p => `
+    <tr>
+      <td><div class="sum-cart-name">${C.esc(p.cart_label)}</div></td>
+      <td><div class="sum-room">${C.esc(p.room || '—')}</div></td>
+      <td><div class="sum-shared">${C.esc(p.shared_with || '—')}</div></td>
+    </tr>`).join('');
+}
+
+// ── Boot ──
+
+document.getElementById('tb-date').textContent = new Date().toLocaleDateString('en-CA', {
+  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+});
+
+AssetsCore.boot({
+  allow: ['school'],
+  onReady: async function(ctx) {
+    const p = ctx.profile;
+    SCHOOL = p.school || '';
+
+    document.getElementById('sb-school').textContent = p.school || '—';
+    document.getElementById('sb-school-sub').textContent = p.board || 'School Admin';
+    const name = p.full_name || p.email;
+    document.getElementById('sb-user').textContent = name;
+    document.getElementById('sb-avi').textContent = (name || '·').charAt(0).toUpperCase();
+
+    const { data, error } = await db.from('cart_plans').select('*').order('created_at');
+    if (error) { console.error('cart_plans load failed:', error.message); }
+    else {
+      PLANS = data || [];
+      if (PLANS.length) { STYLE = PLANS[0].naming_style; updateStyleUI(); }
+    }
+    renderPlans();
+  }
+});
+</script>
+
+</body>
+</html>
