@@ -49,10 +49,11 @@ function initSupabase() {
 .age-strip-bar .seg-warn { background: var(--health-warn); }
 .age-strip-bar .seg-bad  { background: var(--health-bad); }
 .age-strip-legend { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-.age-legend-item { display: flex; flex-direction: column; gap: 2px; padding-left: 14px; border-left: 3px solid var(--paper-deep); }
-.age-legend-item.good { border-left-color: var(--health-good); }
-.age-legend-item.warn { border-left-color: var(--health-warn); }
-.age-legend-item.bad  { border-left-color: var(--health-bad); }
+.age-legend-item { display: flex; flex-direction: column; gap: 2px; }
+.age-legend-item::before { content: ''; display: block; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-soft); margin-bottom: 5px; }
+.age-legend-item.good::before { background: var(--health-good); }
+.age-legend-item.warn::before { background: var(--health-warn); }
+.age-legend-item.bad::before  { background: var(--health-bad); }
 .age-legend-num { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 700; color: var(--ink); line-height: 1; }
 .age-legend-range { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: var(--ink-mid); margin-top: 4px; }
 .age-legend-desc { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
