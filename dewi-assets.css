@@ -167,8 +167,9 @@
   overflow: hidden;
 }
 .scan-cent::before {
-  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
-  width: 4px; background: var(--tobacco);
+  content: ''; position: absolute; left: 32px; top: 18px;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--tobacco);
 }
 .scan-cent-label {
   font-family: 'Jost', sans-serif;
