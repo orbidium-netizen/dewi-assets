@@ -284,12 +284,13 @@ function initSupabase() {
     <a class="nav-item active" href="dewi-assets-settings.html" style="text-decoration:none"><div class="nav-dot"></div>Settings</a>
   </nav>
 
-  <div class="sidebar-user" style="cursor:pointer;" onclick="AssetsCore.signOutAdmin()" title="Sign out">
+  <div class="sidebar-user">
     <div class="avi" id="sb-avi">·</div>
     <div class="info">
       <div class="name" id="sb-user">—</div>
-      <div class="role">Board Admin · Sign out</div>
+      <div class="role">Board Admin</div>
     </div>
+    <button class="sb-signout" onclick="AssetsCore.signOutAdmin()">Sign out</button>
   </div>
 </aside>
 

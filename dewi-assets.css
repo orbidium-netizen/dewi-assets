@@ -358,3 +358,26 @@
   animation: fadeUp 0.25s ease;
 }
 .login-error.show { display: block; }
+
+/* ── Sidebar sign-out button ── */
+.sb-signout {
+  background: none;
+  border: 1px solid rgba(245,239,228,0.12);
+  border-radius: 6px;
+  color: rgba(245,239,228,0.38);
+  font-family: 'Jost', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.sb-signout:hover {
+  color: rgba(245,239,228,0.80);
+  border-color: rgba(245,239,228,0.28);
+  background: rgba(255,255,255,0.07);
+}
