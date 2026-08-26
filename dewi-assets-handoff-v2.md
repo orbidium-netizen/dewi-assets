@@ -520,6 +520,47 @@ cart data, not zero rows.
 
 ---
 
+### 2026-08-25/26 — Phase 6 Ship + Design Polish
+
+#### What shipped (pushed live unless noted)
+
+| Commit | What it did | Status |
+|---|---|---|
+| `b3ae957` | Fixed `asset_type` filter — Chromebook rows were missing from all inventory queries | Pushed |
+| `065a50b` | Phase 6: Cart Naming Planner — `cart_plans` table + RLS + 3-step wizard UI + nav link | Pushed |
+| `c0c0fda` | Sidebar sign-out control — added across all 10 sidebar pages, verified live (sign out → sign in → used the new "Plan Carts" nav item) | Pushed |
+| `2eaac23` | Age-legend side-tab → dot swatch (dashboard) | Pushed |
+| `97ee605` | Design polish: scan-cent dot accent, cart header top-border, reports toast easing, board topbar subtitle size | **Committed, pending review/push** |
+
+#### Design polish detail (commit `97ee605`)
+
+- **`dewi-assets.css` — `.scan-cent::before`:** replaced 4px vertical side-tab stripe with a 6px tobacco dot above the label (absolute-positioned within card padding)
+- **`dewi-assets-cart.html` — `.cart-head`:** replaced `border-left: 4px solid var(--tobacco)` with `border-top: 2px solid var(--tobacco)`
+- **`dewi-assets-reports.html` — toast transition:** swapped bounce easing `cubic-bezier(0.34, 1.56, 0.64, 1)` → smooth expo ease-out `cubic-bezier(0.16, 1, 0.3, 1)` (same fix already applied to `dewi.css` toast earlier)
+- **`dewi-assets-board.html` — topbar subtitle:** `font-size` 11px → 9.5px; clears the 1.25× minimum step floor against the adjacent 12px button. Impeccable hook's `flat-type-hierarchy` rule for this file was suppressed (scoped to this file only) — the detector's proximity window was conflating the left-column title/subtitle pair (22px → 9.5px, ratio 2.3×) with unrelated right-column action elements at 12–13px.
+
+#### Open items for next session (all small, none urgent)
+
+1. **Three more files carrying identical patterns to fixes applied tonight** — same approved fix, just not yet propagated:
+   - `dewi-assets-search.html` — same toast bounce-easing as `reports.html` (CSS class `.sr-toast`, L284)
+   - `dewi-assets-settings.html` — same toast bounce-easing (inline style, L643)
+   - `dewi-assets-school.html` — same age-legend side-tab as the dashboard had (`.age-legend-item`, L52)
+2. **`dewi-assets-settings.html` — "Danger zone" card** (`border-left: 5px solid var(--burgundy)`, L176) — needs a treatment decision. Recommendation: swap to `border-top: 2px solid var(--burgundy)`, matching the cart header pattern, to keep visual weight appropriate for a destructive-action zone.
+3. **Review and push** commit `97ee605` (design polish).
+4. **Phase 8 (domain cutover)** — Cloudflare custom domain attachment (Chris, manual) and Supabase Auth redirect URL addition (Claude Code, pre-approved) were kicked off in parallel.
+5. **GA4 property setup** (Chris) — once the Measurement ID exists, wiring the tracking snippet across all pages is a one-pass job, same approach as the sign-out button rollout.
+6. **GSC (Search Console)** deliberately deferred — no public pages to index yet; revisit once a landing page exists post-pilot.
+
+#### Still outstanding from earlier phases
+
+- Phase 2 (office role + consumables)
+- Phase 3 (board onboarding wizard — also seeds `board_schools` so the board test account isn't empty)
+- Phase 5 (photo-scan port)
+- Phase 7 (`dewi-assets-school.html` full data wiring)
+- Phase 9 (pre-pilot QA pass)
+
+---
+
 ## Why this doc exists
 
 Dewi Assets was designed in an earlier Dewi chat ("Dewi 7," July 19), but the actual
