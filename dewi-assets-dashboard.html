@@ -305,12 +305,18 @@ function initSupabase() {
 }
 .age-legend-item {
   display: flex; flex-direction: column; gap: 2px;
-  padding-left: 14px;
-  border-left: 3px solid var(--paper-deep);
 }
-.age-legend-item.good { border-left-color: var(--health-good); }
-.age-legend-item.warn { border-left-color: var(--health-warn); }
-.age-legend-item.bad  { border-left-color: var(--health-bad); }
+.age-legend-item::before {
+  content: '';
+  display: block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--ink-soft);
+  margin-bottom: 5px;
+}
+.age-legend-item.good::before { background: var(--health-good); }
+.age-legend-item.warn::before { background: var(--health-warn); }
+.age-legend-item.bad::before  { background: var(--health-bad); }
 .age-legend-num {
   font-family: 'Cormorant Garamond', serif;
   font-size: 26px; font-weight: 700;
