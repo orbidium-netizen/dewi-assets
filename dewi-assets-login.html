@@ -629,7 +629,7 @@ async function handleResetPassword() {
   const pw  = document.getElementById('reset-pw').value;
   const pw2 = document.getElementById('reset-pw2').value;
   if (pw.length < 8) { showResetMsg('Choose a password of at least 8 characters.'); return; }
-  if (pw !== pw2)    { showResetMsg('Passwords don’t match — check both fields.'); return; }
+  if (pw !== pw2)    { showResetMsg("Passwords don't match — check both fields."); return; }
   if (!db)           { showResetMsg('Still connecting — try again in a second.'); return; }
   const btn = document.getElementById('reset-submit');
   btn.disabled = true;
@@ -769,14 +769,14 @@ if (window._pendingRecovery) showResetPanel();
    _pendingRecovery. INITIAL_SESSION / SIGNED_IN carry the already-signed-in
    and OAuth-return cases. */
 AssetsCore.waitForDbThenAuth(function () {
-  if (window._isOAuthReturn) showSuccess(‘Signing in…’);
+  if (window._isOAuthReturn) showSuccess('Signing in…');
   db.auth.onAuthStateChange(async function (event, session) {
-    if (event === ‘PASSWORD_RECOVERY’) return;
-    if ((event === ‘INITIAL_SESSION’ || event === ‘SIGNED_IN’) && session) {
+    if (event === 'PASSWORD_RECOVERY') return;
+    if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN') && session) {
       const routed = await routeSignedInAdmin();
       if (!routed && window._isOAuthReturn) {
         await db.auth.signOut();
-        showError(‘This account isn’t set up for Dewi Assets. If you have an invite code, use it below — otherwise contact your board administrator.’);
+        showError("This account isn't set up for Dewi Assets. If you have an invite code, use it below — otherwise contact your board administrator.");
       }
     }
   });
