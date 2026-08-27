@@ -77,6 +77,12 @@ function initSupabase() {
   <!-- Content -->
   <div class="content">
 
+    <!-- ═══ FIRST-RUN PROMPT ═══ -->
+    <div id="first-run-bar" style="display:none;padding:24px 0 8px;">
+      <p class="inv-orient-bar">Start here — add your first school to get going.</p>
+      <button class="btn btn-tobacco" onclick="openBoardWizard()" style="border-radius:var(--r-pill);padding:9px 20px;font-family:'Jost',sans-serif;font-size:13px;font-weight:500;border:none;cursor:pointer;">+ Add your first school</button>
+    </div>
+
     <!-- ═══ BOARD HERO ═══ -->
     <section class="board-hero">
       <div class="board-hero-img">
@@ -207,9 +213,112 @@ function initSupabase() {
   <span>Find any device<span class="sub">Search across the board</span></span>
 </a>
 
+<!-- ═════════ Board Onboarding Wizard ═════════ -->
+<div id="bwiz-overlay" style="display:none">
+  <div class="wiz-modal">
+
+    <!-- Header -->
+    <div class="wiz-modal-header">
+      <div class="wiz-modal-title">Set up your board</div>
+      <button class="wiz-close-btn" onclick="closeBwiz()" aria-label="Close">×</button>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="wiz-progress">
+      <div class="wiz-prog-step active" id="bwiz-prog-1">
+        <div class="wiz-prog-num" id="bwiz-prog-1-num">1</div>
+        <div class="wiz-prog-label">Add schools</div>
+      </div>
+      <div class="wiz-prog-line"></div>
+      <div class="wiz-prog-step pending" id="bwiz-prog-2">
+        <div class="wiz-prog-num" id="bwiz-prog-2-num">2</div>
+        <div class="wiz-prog-label">Invite admins</div>
+      </div>
+      <div class="wiz-prog-line"></div>
+      <div class="wiz-prog-step pending" id="bwiz-prog-3">
+        <div class="wiz-prog-num" id="bwiz-prog-3-num">3</div>
+        <div class="wiz-prog-label">Review &amp; done</div>
+      </div>
+    </div>
+
+    <!-- Step 1: Add schools -->
+    <div class="wiz-step-body" id="bwiz-step-1">
+      <div class="wiz-two-col">
+        <div>
+          <div class="wiz-inst-title">Add your schools</div>
+          <div class="wiz-inst-body">Enter each school in your board. You can add more than one before continuing. School name is required — city and code are optional but help staff identify schools at a glance.</div>
+        </div>
+        <div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <input id="bwiz-s1-name" type="text" placeholder="School name *" style="width:100%;padding:9px 12px;border:1px solid var(--paper-deep);border-radius:6px;font-family:'Jost',sans-serif;font-size:13px;background:var(--paper);color:var(--ink);box-sizing:border-box;">
+            <input id="bwiz-s1-city" type="text" placeholder="City" style="width:100%;padding:9px 12px;border:1px solid var(--paper-deep);border-radius:6px;font-family:'Jost',sans-serif;font-size:13px;background:var(--paper);color:var(--ink);box-sizing:border-box;">
+            <input id="bwiz-s1-code" type="text" placeholder="School code" style="width:100%;padding:9px 12px;border:1px solid var(--paper-deep);border-radius:6px;font-family:'Jost',sans-serif;font-size:13px;background:var(--paper);color:var(--ink);box-sizing:border-box;">
+            <button class="btn btn-tobacco" onclick="bwizAddSchool()" style="border-radius:var(--r-pill);padding:9px 20px;font-family:'Jost',sans-serif;font-size:13px;font-weight:500;border:none;cursor:pointer;align-self:flex-start;">Add school</button>
+          </div>
+          <div class="bwiz-added-list" id="bwiz-s1-list"></div>
+        </div>
+      </div>
+      <div class="wiz-step-footer">
+        <span class="wiz-err" id="bwiz-s1-err"></span>
+        <button class="btn btn-tobacco" onclick="bwizStep1Next()" style="border-radius:var(--r-pill);padding:9px 20px;font-family:'Jost',sans-serif;font-size:13px;font-weight:500;border:none;cursor:pointer;">Next →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Invite school admins -->
+    <div class="wiz-step-body" id="bwiz-step-2" style="display:none">
+      <div class="wiz-two-col">
+        <div>
+          <div class="wiz-inst-title">Invite school admins</div>
+          <div class="wiz-inst-body">Send login invites to the administrators for each school you added. This step is optional — you can always send invites later from Settings. Invites are scoped to a single school.</div>
+        </div>
+        <div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <input id="bwiz-s2-email" type="email" placeholder="Admin email *" style="width:100%;padding:9px 12px;border:1px solid var(--paper-deep);border-radius:6px;font-family:'Jost',sans-serif;font-size:13px;background:var(--paper);color:var(--ink);box-sizing:border-box;">
+            <select id="bwiz-s2-school" style="width:100%;padding:9px 12px;border:1px solid var(--paper-deep);border-radius:6px;font-family:'Jost',sans-serif;font-size:13px;background:var(--paper);color:var(--ink);box-sizing:border-box;"></select>
+            <button class="btn btn-tobacco" onclick="bwizSendInvite()" style="border-radius:var(--r-pill);padding:9px 20px;font-family:'Jost',sans-serif;font-size:13px;font-weight:500;border:none;cursor:pointer;align-self:flex-start;">Send invite</button>
+          </div>
+          <div class="bwiz-added-list" id="bwiz-s2-list"></div>
+        </div>
+      </div>
+      <div class="wiz-step-footer">
+        <span class="wiz-err" id="bwiz-s2-err"></span>
+        <button class="btn btn-secondary btn-sm" onclick="bwizGoToStep(1)" style="cursor:pointer;">← Back</button>
+        <button class="btn btn-tobacco" onclick="bwizStep2Next()" style="border-radius:var(--r-pill);padding:9px 20px;font-family:'Jost',sans-serif;font-size:13px;font-weight:500;border:none;cursor:pointer;">Next →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Review & Done -->
+    <div class="wiz-step-body" id="bwiz-step-3" style="display:none">
+      <div class="wiz-two-col">
+        <div>
+          <div class="wiz-inst-title">Ready to go</div>
+          <div class="wiz-inst-body">Here's what was set up. Your board dashboard will refresh when you click Done — you'll see your schools appear right away.</div>
+        </div>
+        <div>
+          <div class="bwiz-summary-section">
+            <div class="bwiz-summary-label">Schools added</div>
+            <div id="bwiz-s3-schools"></div>
+          </div>
+          <div class="bwiz-summary-section">
+            <div class="bwiz-summary-label">Invites sent</div>
+            <div id="bwiz-s3-invites"></div>
+          </div>
+        </div>
+      </div>
+      <div class="wiz-step-footer">
+        <button class="btn btn-secondary btn-sm" onclick="bwizGoToStep(2)" style="cursor:pointer;">← Back</button>
+        <button class="btn btn-tobacco" onclick="bwizDone()" style="border-radius:var(--r-pill);padding:9px 20px;font-family:'Jost',sans-serif;font-size:13px;font-weight:500;border:none;cursor:pointer;">Done →</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <script src="dewi-assets-core.js"></script>
 <script>
 const C = AssetsCore;
+let WIZARD_PROFILE = null;
+const wizState = { step: 1, schools: [], invites: [] };
 
 function greeting(name) {
   const h = new Date().getHours();
@@ -237,9 +346,13 @@ function healthLabel(h) {
 
 async function render(ctx) {
   const p = ctx.profile, scope = ctx.scope;
+  WIZARD_PROFILE = p;
   const boardName = p.board || '—';
   const schools = scope.boardSchools || [];
   const schoolNames = scope.schools || [];
+
+  // First-run bar: show only when board has no schools yet
+  document.getElementById('first-run-bar').style.display = schools.length === 0 ? '' : 'none';
 
   // Sidebar
   document.getElementById('sb-board').textContent = boardName;
@@ -395,6 +508,132 @@ document.querySelectorAll('.board-filter-pill').forEach(btn => {
     });
   });
 });
+
+// ── Board Onboarding Wizard ──────────────────────────────────────────────────
+
+function bwizGoToStep(n) {
+  wizState.step = n;
+  [1, 2, 3].forEach(i => {
+    const body = document.getElementById('bwiz-step-' + i);
+    if (body) body.style.display = i === n ? 'block' : 'none';
+    const prog = document.getElementById('bwiz-prog-' + i);
+    if (prog) prog.className = 'wiz-prog-step ' + (i < n ? 'done' : i === n ? 'active' : 'pending');
+    const num = document.getElementById('bwiz-prog-' + i + '-num');
+    if (num) num.textContent = i < n ? '✓' : String(i);
+  });
+  document.querySelector('#bwiz-overlay .wiz-modal')?.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function openBoardWizard() {
+  wizState.schools = [];
+  wizState.invites = [];
+  ['bwiz-s1-list','bwiz-s2-list'].forEach(id => { document.getElementById(id).innerHTML = ''; });
+  ['bwiz-s1-err','bwiz-s2-err'].forEach(id => { document.getElementById(id).textContent = ''; });
+  ['bwiz-s1-name','bwiz-s1-city','bwiz-s1-code','bwiz-s2-email'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('bwiz-overlay').style.display = 'flex';
+  bwizGoToStep(1);
+}
+
+function closeBwiz() {
+  document.getElementById('bwiz-overlay').style.display = 'none';
+}
+
+function bwizRefreshS1List() {
+  document.getElementById('bwiz-s1-list').innerHTML = wizState.schools.map(s =>
+    '<div class="bwiz-added-item"><span class="bwiz-added-check">✓</span><span>' +
+    C.esc(s.name) + (s.city ? ' · ' + C.esc(s.city) : '') + (s.code ? ' · ' + C.esc(s.code) : '') +
+    '</span></div>'
+  ).join('');
+}
+
+function bwizRefreshS2List() {
+  document.getElementById('bwiz-s2-list').innerHTML = wizState.invites.map(i =>
+    '<div class="bwiz-added-item"><span class="bwiz-added-check">✓</span><span>' +
+    C.esc(i.email) + ' → ' + C.esc(i.school || '—') +
+    '</span></div>'
+  ).join('');
+}
+
+function bwizPopulateSchoolSelect() {
+  const sel = document.getElementById('bwiz-s2-school');
+  sel.innerHTML = wizState.schools.length
+    ? wizState.schools.map(s => '<option value="' + C.esc(s.name) + '">' + C.esc(s.name) + '</option>').join('')
+    : '<option value="">— no schools added —</option>';
+}
+
+async function bwizAddSchool() {
+  const name = document.getElementById('bwiz-s1-name').value.trim();
+  const city = document.getElementById('bwiz-s1-city').value.trim();
+  const code = document.getElementById('bwiz-s1-code').value.trim();
+  if (!name) { document.getElementById('bwiz-s1-name').focus(); return; }
+
+  const { error } = await db.from('board_schools').insert({
+    board_id: WIZARD_PROFILE.id,
+    school_name: name,
+    city: city || null,
+    school_code: code || null
+  });
+  if (error) { document.getElementById('bwiz-s1-err').textContent = 'Error: ' + error.message; return; }
+
+  document.getElementById('bwiz-s1-err').textContent = '';
+  wizState.schools.push({ name, city, code });
+  ['bwiz-s1-name','bwiz-s1-city','bwiz-s1-code'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('bwiz-s1-name').focus();
+  bwizRefreshS1List();
+}
+
+function bwizStep1Next() {
+  if (wizState.schools.length === 0) {
+    document.getElementById('bwiz-s1-err').textContent = 'Add at least one school before continuing.';
+    return;
+  }
+  document.getElementById('bwiz-s1-err').textContent = '';
+  bwizPopulateSchoolSelect();
+  bwizGoToStep(2);
+}
+
+async function bwizSendInvite() {
+  const email = document.getElementById('bwiz-s2-email').value.trim();
+  if (!email) { document.getElementById('bwiz-s2-email').focus(); return; }
+  const school = document.getElementById('bwiz-s2-school').value || null;
+
+  const { error } = await db.from('admin_invites').insert({
+    email: email,
+    role: 'school',
+    school: school,
+    board: WIZARD_PROFILE.board,
+    invited_by: WIZARD_PROFILE.id
+  });
+  if (error) { document.getElementById('bwiz-s2-err').textContent = 'Error: ' + error.message; return; }
+
+  document.getElementById('bwiz-s2-err').textContent = '';
+  wizState.invites.push({ email, school });
+  document.getElementById('bwiz-s2-email').value = '';
+  bwizRefreshS2List();
+}
+
+function bwizStep2Next() {
+  const schoolsEl = document.getElementById('bwiz-s3-schools');
+  schoolsEl.innerHTML = wizState.schools.length
+    ? wizState.schools.map(s =>
+        '<div class="bwiz-summary-row"><span>' + C.esc(s.name) + (s.city ? ', ' + C.esc(s.city) : '') + '</span></div>'
+      ).join('')
+    : '<div class="bwiz-none">No schools added</div>';
+
+  const invitesEl = document.getElementById('bwiz-s3-invites');
+  invitesEl.innerHTML = wizState.invites.length
+    ? wizState.invites.map(i =>
+        '<div class="bwiz-summary-row"><span>' + C.esc(i.email) + ' → ' + C.esc(i.school || '—') + '</span></div>'
+      ).join('')
+    : '<div class="bwiz-none">No invites sent</div>';
+
+  bwizGoToStep(3);
+}
+
+function bwizDone() {
+  closeBwiz();
+  AssetsCore.boot({ allow: ['board'], onReady: render });
+}
 
 AssetsCore.boot({
   allow: ['board'],
