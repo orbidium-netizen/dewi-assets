@@ -359,6 +359,11 @@
   animation: fadeUp 0.25s ease;
 }
 .login-error.show { display: block; }
+.login-error.ok {
+  background: var(--health-good-lt);
+  color: var(--health-good);
+  border-color: rgba(44,95,53,0.25);
+}
 
 /* ── Sidebar sign-out button ── */
 .sb-signout {
@@ -382,3 +387,108 @@
   border-color: rgba(245,239,228,0.28);
   background: rgba(255,255,255,0.07);
 }
+
+/* ── Board Onboarding Wizard ─────────────────────────────────────── */
+.inv-orient-bar {
+  font-size: 15px; font-weight: 600; color: var(--ink-soft);
+  font-style: italic; margin: 0 0 12px; padding: 0; line-height: 1.4;
+}
+#bwiz-overlay {
+  position: fixed; inset: 0;
+  background: rgba(30,22,16,0.55);
+  z-index: 900;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 32px 16px;
+}
+.wiz-modal {
+  background: var(--cream);
+  border-radius: var(--r-card);
+  width: 100%;
+  max-width: 860px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.28);
+  display: flex;
+  flex-direction: column;
+  margin: auto;
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+}
+.wiz-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--paper-deep);
+  position: sticky;
+  top: 0;
+  background: var(--cream);
+  z-index: 10;
+}
+.wiz-modal-title { font-family: 'Cormorant Garamond',serif; font-size: 24px; font-weight: 600; color: var(--ink); }
+.wiz-close-btn {
+  width: 32px; height: 32px;
+  border: 1px solid var(--paper-deep);
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--ink-soft);
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.12s;
+}
+.wiz-close-btn:hover { background: var(--paper-deep); }
+.wiz-progress {
+  display: flex;
+  align-items: center;
+  padding: 14px 28px;
+  border-bottom: 1px solid var(--paper-deep);
+}
+.wiz-prog-step { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.wiz-prog-num {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Jost',sans-serif;
+  font-size: 12px; font-weight: 700;
+  background: var(--tobacco); color: white;
+  transition: background 0.2s, color 0.2s;
+}
+.wiz-prog-step.pending .wiz-prog-num { background: var(--paper-deep); color: var(--ink-ghost); }
+.wiz-prog-step.done    .wiz-prog-num { background: var(--tobacco-lt); color: var(--tobacco); }
+.wiz-prog-label { font-family: 'Jost',sans-serif; font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+.wiz-prog-step.active  .wiz-prog-label { color: var(--ink); }
+.wiz-prog-step.pending .wiz-prog-label { color: var(--ink-ghost); }
+.wiz-prog-line { flex: 1; height: 1px; background: var(--paper-deep); margin: 0 12px; }
+.wiz-step-body { padding: 28px; }
+.wiz-two-col { display: grid; grid-template-columns: 1fr 1.5fr; gap: 32px; }
+@media (max-width: 660px) { .wiz-two-col { grid-template-columns: 1fr; } }
+.wiz-inst-title { font-family: 'Cormorant Garamond',serif; font-size: 20px; font-weight: 600; color: var(--ink); margin-bottom: 8px; }
+.wiz-inst-body  { font-family: 'Jost',sans-serif; font-size: 13px; color: var(--ink-soft); line-height: 1.7; }
+.wiz-step-footer {
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 10px; padding: 20px 28px 24px;
+  border-top: 1px solid var(--paper-deep); margin-top: 24px;
+}
+.wiz-err { color: var(--burgundy); font-family: 'Jost',sans-serif; font-size: 12px; font-weight: 600; margin-right: auto; }
+.bwiz-added-list { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
+.bwiz-added-item {
+  display: flex; align-items: center; gap: 8px;
+  font-family: 'Jost',sans-serif; font-size: 12px; color: var(--ink-soft);
+  background: var(--paper); border-radius: 6px; padding: 6px 10px;
+}
+.bwiz-added-check { color: var(--tobacco); font-weight: 700; flex-shrink: 0; }
+.bwiz-summary-section { margin-bottom: 20px; }
+.bwiz-summary-label {
+  font-family: 'Jost',sans-serif; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-ghost);
+  margin-bottom: 8px;
+}
+.bwiz-summary-row {
+  display: flex; align-items: center; gap: 10px;
+  font-family: 'Jost',sans-serif; font-size: 13px; color: var(--ink-soft);
+  padding: 6px 0; border-bottom: 1px solid var(--paper-deep);
+}
+.bwiz-summary-row:last-child { border-bottom: none; }
+.bwiz-none { font-family: 'Jost',sans-serif; font-size: 13px; color: var(--ink-ghost); font-style: italic; }

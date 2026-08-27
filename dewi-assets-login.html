@@ -444,7 +444,7 @@ body::after { z-index: 1; }
             <span class="box"></span>
             <span>Stay signed in</span>
           </label>
-          <a class="login-forgot" href="#">Forgot password?</a>
+          <a class="login-forgot" href="#" onclick="event.preventDefault();handleForgotPassword();">Forgot password?</a>
         </div>
 
         <button class="login-submit" type="submit">Sign in to Dewi Assets</button>
@@ -488,10 +488,34 @@ function toggleInvite() {
 function showError(msg) {
   const el = document.getElementById('login-error');
   el.textContent = msg;
+  el.classList.remove('ok');
   el.classList.add('show');
 }
+function showSuccess(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = msg;
+  el.classList.add('show', 'ok');
+}
 function clearError() {
-  document.getElementById('login-error').classList.remove('show');
+  const el = document.getElementById('login-error');
+  el.classList.remove('show', 'ok');
+}
+
+async function handleForgotPassword() {
+  const email = document.getElementById('admin-email').value.trim();
+  if (!email) {
+    showError('Enter your school email above first, then click Forgot password.');
+    return;
+  }
+  if (!db) { showError('Still connecting — try again in a second.'); return; }
+  const { error } = await db.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://dewiassets.com/dewi-assets-login'
+  });
+  if (error) {
+    showError(error.message);
+  } else {
+    showSuccess('Check your email for a reset link.');
+  }
 }
 
 function routeByRole(role) {
