@@ -18,6 +18,12 @@ function initSupabase() {
       'https://ivdkipygpasvowigarfb.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2ZGtpcHlncGFzdm93aWdhcmZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMzA2NzcsImV4cCI6MjA5MjcwNjY3N30.qKN6tCqyyIIVoPAVl1o2_2gtUkfBh2aBWDP_sIDcxgE'
     );
+    db.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        window._pendingRecovery = true;
+        if (typeof showResetPanel === 'function') showResetPanel();
+      }
+    });
   } catch(e) { console.error('Supabase init failed:', e.message); }
 }
 </script>
@@ -460,6 +466,22 @@ body::after { z-index: 1; }
         </div>
 
       </form>
+
+      <!-- Reset password panel — shown on recovery redirect -->
+      <form class="login-form" id="reset-panel" style="display:none;" onsubmit="event.preventDefault();handleResetPassword();">
+        <p class="login-tagline" style="margin: 0 0 4px; font-size: 19px;">Set a new password</p>
+        <div class="login-error" id="reset-msg"></div>
+        <div class="login-field">
+          <label class="login-field-label" for="reset-pw">New password <span class="req">·</span></label>
+          <input class="login-input" id="reset-pw" type="password" autocomplete="new-password" placeholder="At least 8 characters">
+        </div>
+        <div class="login-field">
+          <label class="login-field-label" for="reset-pw2">Confirm new password <span class="req">·</span></label>
+          <input class="login-input" id="reset-pw2" type="password" autocomplete="new-password" placeholder="••••••••••••">
+        </div>
+        <button class="login-submit" type="submit" id="reset-submit">Set new password</button>
+      </form>
+
     </div>
 
     <!-- Footer -->
@@ -524,9 +546,58 @@ function routeByRole(role) {
     : 'dewi-assets-dashboard.html';
 }
 
-/* Look up the admin profile for the signed-in user and route.
-   Returns false (and signs out) if no admin_accounts row exists. */
+function showResetMsg(msg, ok) {
+  const el = document.getElementById('reset-msg');
+  el.textContent = msg;
+  el.classList.toggle('ok', !!ok);
+  el.classList.add('show');
+}
+function clearResetMsg() {
+  document.getElementById('reset-msg').classList.remove('show', 'ok');
+}
+
+function showResetPanel() {
+  document.querySelector('.login-form').style.display = 'none';
+  document.getElementById('reset-panel').style.display = 'flex';
+  document.getElementById('reset-pw').focus();
+}
+
+async function handleResetPassword() {
+  clearResetMsg();
+  const pw  = document.getElementById('reset-pw').value;
+  const pw2 = document.getElementById('reset-pw2').value;
+  if (pw.length < 8) { showResetMsg('Choose a password of at least 8 characters.'); return; }
+  if (pw !== pw2)    { showResetMsg('Passwords don’t match — check both fields.'); return; }
+  if (!db)           { showResetMsg('Still connecting — try again in a second.'); return; }
+  const btn = document.getElementById('reset-submit');
+  btn.disabled = true;
+  const { error } = await db.auth.updateUser({ password: pw });
+  btn.disabled = false;
+  if (error) {
+    showResetMsg(error.message);
+  } else {
+    showResetMsg('Password updated — signing you in…', true);
+    setTimeout(() => window.location.replace(window.location.pathname), 2500);
+  }
+}
+
+function checkUrlError() {
+  const hash = window.location.hash.slice(1);
+  const search = window.location.search.slice(1);
+  const params = new URLSearchParams(hash || search);
+  const err = params.get('error');
+  if (!err) return;
+  const errCode = params.get('error_code');
+  if (errCode === 'otp_expired' || err === 'access_denied') {
+    showError('This reset link has expired or was already used. Request a new one below.');
+  } else {
+    showError(params.get('error_description') || err);
+  }
+  history.replaceState(null, '', window.location.pathname);
+}
+
 async function routeSignedInAdmin() {
+  if (window._pendingRecovery) return false;
   const { data: { session } } = await db.auth.getSession();
   if (!session) return false;
   const { data: profile } = await db
@@ -606,6 +677,10 @@ async function handleInviteSignup() {
     showError('Something went wrong: ' + e.message);
   }
 }
+
+/* Handle recovery redirect and URL errors on page load */
+checkUrlError();
+if (window._pendingRecovery) showResetPanel();
 
 /* If already signed in as an admin, skip the form entirely */
 AssetsCore.waitForDbThenAuth(function () {
