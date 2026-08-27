@@ -297,6 +297,56 @@ body::after { z-index: 1; }
   transition: color 0.15s;
 }
 .invite-toggle:hover { color: var(--tobacco); }
+
+/* ───────── OAuth divider + Google button ───────── */
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'Jost', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-ghost);
+  margin: 4px 0;
+}
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--paper-deep);
+}
+.login-google-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 24px;
+  background: var(--paper);
+  border: 1.5px solid var(--paper-deep);
+  border-radius: var(--r-pill);
+  font-family: 'Jost', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.02em;
+}
+.login-google-btn:hover {
+  border-color: var(--tobacco);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  transform: translateY(-1px);
+}
+.login-google-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+  transform: none;
+}
+
 .invite-toggle .chev {
   display: inline-block;
   margin-left: 4px;
@@ -454,6 +504,18 @@ body::after { z-index: 1; }
         </div>
 
         <button class="login-submit" type="submit">Sign in to Dewi Assets</button>
+
+        <div class="login-divider">or</div>
+
+        <button class="login-google-btn" id="google-signin-btn" type="button" onclick="handleGoogleSignIn()">
+          <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908C16.658 14.016 17.64 11.708 17.64 8.968z" fill="#4285F4"/>
+            <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+            <path d="M3.964 10.707A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/>
+            <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.96L3.964 7.294C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+          </svg>
+          <span id="google-signin-text">Sign in with Google</span>
+        </button>
 
         <button class="invite-toggle" type="button" id="invite-toggle" onclick="toggleInvite()">
           Using an invite code? <span class="chev">▾</span>
@@ -678,13 +740,43 @@ async function handleInviteSignup() {
   }
 }
 
+async function handleGoogleSignIn() {
+  if (!db) { showError('Still connecting — try again in a second.'); return; }
+  clearError();
+  const btn = document.getElementById('google-signin-btn');
+  const txt = document.getElementById('google-signin-text');
+  btn.disabled = true;
+  txt.textContent = 'Signing in…';
+  await db.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: 'https://dewiassets.com/dewi-assets-login' }
+  });
+}
+
+/* Capture OAuth return flag before Supabase may consume the hash */
+window._isOAuthReturn = window.location.hash.includes('access_token') ||
+  new URLSearchParams(window.location.search).has('code');
+
 /* Handle recovery redirect and URL errors on page load */
 checkUrlError();
 if (window._pendingRecovery) showResetPanel();
 
-/* If already signed in as an admin, skip the form entirely */
-AssetsCore.waitForDbThenAuth(function () {
-  routeSignedInAdmin();
+/* If already signed in as an admin, skip the form entirely.
+   Also handles the Google OAuth redirect return: show loading state,
+   and sign out + explain if the Google account has no admin_accounts row. */
+AssetsCore.waitForDbThenAuth(async function () {
+  if (window._pendingRecovery) return;
+  if (window._isOAuthReturn) showSuccess('Signing in…');
+  const routed = await routeSignedInAdmin();
+  if (!routed && window._isOAuthReturn) {
+    const { data: { session } } = await db.auth.getSession();
+    if (session) {
+      await db.auth.signOut();
+      showError('This account isn’t set up for Dewi Assets. If you have an invite code, use it below — otherwise contact your board administrator.');
+    } else {
+      clearError();
+    }
+  }
 });
 </script>
 
