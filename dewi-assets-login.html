@@ -761,22 +761,25 @@ window._isOAuthReturn = window.location.hash.includes('access_token') ||
 checkUrlError();
 if (window._pendingRecovery) showResetPanel();
 
-/* If already signed in as an admin, skip the form entirely.
-   Also handles the Google OAuth redirect return: show loading state,
-   and sign out + explain if the Google account has no admin_accounts row. */
-AssetsCore.waitForDbThenAuth(async function () {
-  if (window._pendingRecovery) return;
-  if (window._isOAuthReturn) showSuccess('Signing in…');
-  const routed = await routeSignedInAdmin();
-  if (!routed && window._isOAuthReturn) {
-    const { data: { session } } = await db.auth.getSession();
-    if (session) {
-      await db.auth.signOut();
-      showError('This account isn’t set up for Dewi Assets. If you have an invite code, use it below — otherwise contact your board administrator.');
-    } else {
-      clearError();
+/* Route the user once we know what kind of session this page load carries.
+   We use onAuthStateChange (not getSession) so Supabase tells us the event
+   type before we act. PASSWORD_RECOVERY fires first for recovery URLs, so
+   we can bail out before any redirect — closing the race where getSession()
+   would return a valid session before the recovery event had a chance to set
+   _pendingRecovery. INITIAL_SESSION / SIGNED_IN carry the already-signed-in
+   and OAuth-return cases. */
+AssetsCore.waitForDbThenAuth(function () {
+  if (window._isOAuthReturn) showSuccess(‘Signing in…’);
+  db.auth.onAuthStateChange(async function (event, session) {
+    if (event === ‘PASSWORD_RECOVERY’) return;
+    if ((event === ‘INITIAL_SESSION’ || event === ‘SIGNED_IN’) && session) {
+      const routed = await routeSignedInAdmin();
+      if (!routed && window._isOAuthReturn) {
+        await db.auth.signOut();
+        showError(‘This account isn’t set up for Dewi Assets. If you have an invite code, use it below — otherwise contact your board administrator.’);
+      }
     }
-  }
+  });
 });
 </script>
 
