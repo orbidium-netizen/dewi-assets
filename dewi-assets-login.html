@@ -8,6 +8,19 @@
 <link rel="stylesheet" href="dewi.css">
 <link rel="stylesheet" href="dewi-assets.css">
 
+<!-- Detect password-reset flow synchronously, before Supabase client exists.
+     Implicit-flow reset links carry type=recovery in the hash alongside access_token.
+     Setting _pendingRecovery here — at HTML parse time — means no async event can
+     race it: routeSignedInAdmin() and every auth listener check this flag first. -->
+<script>
+(function () {
+  var raw = window.location.hash.slice(1) || window.location.search.slice(1);
+  if (new URLSearchParams(raw).get('type') === 'recovery') {
+    window._pendingRecovery = true;
+  }
+}());
+</script>
+
 <!-- Supabase (Safari-safe onload pattern) -->
 <script>
 let db = null;
@@ -753,21 +766,22 @@ async function handleGoogleSignIn() {
   });
 }
 
-/* Capture OAuth return flag before Supabase may consume the hash */
-window._isOAuthReturn = window.location.hash.includes('access_token') ||
-  new URLSearchParams(window.location.search).has('code');
+/* Capture OAuth return flag before Supabase may consume the hash.
+   Exclude recovery URLs — they also carry access_token but are not OAuth returns. */
+window._isOAuthReturn = !window._pendingRecovery && (
+  window.location.hash.includes('access_token') ||
+  new URLSearchParams(window.location.search).has('code')
+);
 
 /* Handle recovery redirect and URL errors on page load */
 checkUrlError();
 if (window._pendingRecovery) showResetPanel();
 
 /* Route the user once we know what kind of session this page load carries.
-   We use onAuthStateChange (not getSession) so Supabase tells us the event
-   type before we act. PASSWORD_RECOVERY fires first for recovery URLs, so
-   we can bail out before any redirect — closing the race where getSession()
-   would return a valid session before the recovery event had a chance to set
-   _pendingRecovery. INITIAL_SESSION / SIGNED_IN carry the already-signed-in
-   and OAuth-return cases. */
+   _pendingRecovery was set synchronously (above) from the URL before any
+   Supabase client or listener existed, so routeSignedInAdmin() will bail out
+   for recovery URLs regardless of which auth events fire or in what order.
+   INITIAL_SESSION / SIGNED_IN carry the already-signed-in and OAuth-return cases. */
 AssetsCore.waitForDbThenAuth(function () {
   if (window._isOAuthReturn) showSuccess('Signing in…');
   db.auth.onAuthStateChange(async function (event, session) {
