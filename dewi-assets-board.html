@@ -330,6 +330,7 @@ function numberWord(n) {
   const words = ['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'];
   return n <= 12 ? words[n] : String(n);
 }
+function pluralize(n, singular, plural) { return n === 1 ? singular : plural; }
 
 function schoolHealth(expiring, total) {
   if (!total) return 'good';
@@ -356,7 +357,7 @@ async function render(ctx) {
 
   // Sidebar
   document.getElementById('sb-board').textContent = boardName;
-  document.getElementById('sb-board-sub').textContent = schoolNames.length + ' schools';
+  document.getElementById('sb-board-sub').textContent = schoolNames.length + ' ' + pluralize(schoolNames.length, 'school', 'schools');
   const name = p.full_name || p.email;
   document.getElementById('sb-user').textContent = name;
   document.getElementById('sb-avi').textContent = (name||'·').charAt(0).toUpperCase();
@@ -368,9 +369,9 @@ async function render(ctx) {
     new Date().toLocaleDateString('en-CA', { weekday:'long', day:'numeric', month:'long', year:'numeric' }) + ' · Board overview';
 
   document.getElementById('hero-sub').textContent =
-    'A live, board-wide view of every device across all ' + numberWord(schoolNames.length) + ' schools.';
+    'A live, board-wide view of every device across all ' + numberWord(schoolNames.length) + ' ' + pluralize(schoolNames.length, 'school', 'schools') + '.';
   document.getElementById('schools-head').innerHTML =
-    'Your <em>' + C.esc(numberWord(schoolNames.length)) + '</em> schools';
+    'Your <em>' + C.esc(numberWord(schoolNames.length)) + '</em> ' + pluralize(schoolNames.length, 'school', 'schools');
 
   // Load inventory
   const inv = await C.loadInventory(schoolNames);
@@ -472,7 +473,7 @@ async function render(ctx) {
     if (school !== lastSchool) {
       lastSchool = school;
       const cnt = aueAlerts.filter(x => { const c2 = cartsById[x.cart_id]; return c2 && c2.school === school; }).length;
-      grp = '<div class="aue-group-label">' + C.esc(school) + ' <span class="ct">' + cnt + ' devices</span></div>';
+      grp = '<div class="aue-group-label">' + C.esc(school) + ' <span class="ct">' + cnt + ' ' + pluralize(cnt, 'device', 'devices') + '</span></div>';
     }
     return grp + `
       <div class="aue-item">
