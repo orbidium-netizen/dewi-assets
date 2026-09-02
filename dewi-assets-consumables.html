@@ -215,7 +215,15 @@ function initSupabase() {
             </div>
             <div class="add-field">
               <label class="add-label" for="ac-category">Category</label>
-              <input class="add-input" id="ac-category" type="text" placeholder="e.g. Office supplies">
+              <select class="add-input" id="ac-category">
+                <option value="">— Select category —</option>
+                <option value="paper">Paper</option>
+                <option value="cleaning">Cleaning Supplies</option>
+                <option value="ink_toner">Ink &amp; Toner</option>
+                <option value="classroom">Classroom Supplies</option>
+                <option value="bathroom">Bathroom Supplies</option>
+                <option value="other">Other</option>
+              </select>
             </div>
             <div class="add-field">
               <label class="add-label" for="ac-unit">Unit</label>
@@ -303,6 +311,7 @@ function initSupabase() {
 <script src="dewi-assets-core.js"></script>
 <script>
 const C = AssetsCore;
+const CATEGORY_LABELS = { paper: 'Paper', cleaning: 'Cleaning Supplies', ink_toner: 'Ink & Toner', classroom: 'Classroom Supplies', bathroom: 'Bathroom Supplies', other: 'Other' };
 let PROFILE = null;
 let CONSUMABLES = [];
 let ADJ_ID = null;
@@ -350,7 +359,7 @@ function renderConsumables() {
     var isLow = c.current_stock <= c.reorder_threshold;
     return '<tr class="' + (isLow ? 'low-stock' : '') + '">' +
       '<td class="name">' + C.esc(c.item_name) + (isLow ? '<span class="low-badge">Low</span>' : '') + '</td>' +
-      '<td>' + C.esc(c.category || '—') + '</td>' +
+      '<td>' + C.esc(CATEGORY_LABELS[c.category] || c.category || '—') + '</td>' +
       '<td class="num">' + c.current_stock + (c.unit ? ' <span style="color:var(--ink-ghost);font-size:11px;">' + C.esc(c.unit) + '</span>' : '') + '</td>' +
       '<td class="num">' + c.reorder_threshold + '</td>' +
       '<td class="ctr"><input type="checkbox" class="bv-toggle"' + (c.board_visible ? ' checked' : '') +
