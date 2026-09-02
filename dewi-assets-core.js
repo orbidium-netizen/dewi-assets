@@ -35,7 +35,10 @@ var AssetsCore = (function () {
     }
     if (allowedRoles && allowedRoles.length && !allowedRoles.includes(profile.role)) {
       window.location.href = profile.role === 'board'
-        ? 'dewi-assets-board.html' : 'dewi-assets-dashboard.html';
+        ? 'dewi-assets-board.html'
+        : profile.role === 'office'
+          ? 'dewi-assets-consumables.html'
+          : 'dewi-assets-dashboard.html';
       return null;
     }
 

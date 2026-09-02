@@ -618,7 +618,9 @@ async function handleForgotPassword() {
 function routeByRole(role) {
   window.location.href = role === 'board'
     ? 'dewi-assets-board.html'
-    : 'dewi-assets-dashboard.html';
+    : role === 'office'
+      ? 'dewi-assets-consumables.html'
+      : 'dewi-assets-dashboard.html';
 }
 
 function showResetMsg(msg, ok) {

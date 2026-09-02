@@ -601,6 +601,10 @@ function initSupabase() {
           <div class="rt">School Admin</div>
           <div class="rd">One school</div>
         </div>
+        <div class="role-opt" id="role-office" onclick="pickRole('office')">
+          <div class="rt">Office Staff</div>
+          <div class="rd">Consumables only</div>
+        </div>
       </div>
     </div>
     <div class="set-field" id="invite-school-field">
@@ -663,14 +667,17 @@ function closeInvite() { document.getElementById('invite-scrim').classList.remov
 function pickRole(role) {
   document.getElementById('role-board').classList.toggle('active', role === 'board');
   document.getElementById('role-school').classList.toggle('active', role === 'school');
-  document.getElementById('invite-school-field').classList.toggle('show', role === 'school');
+  document.getElementById('role-office').classList.toggle('active', role === 'office');
+  document.getElementById('invite-school-field').classList.toggle('show', role === 'school' || role === 'office');
 }
 
 async function sendInvite() {
   const email = document.getElementById('inv-email').value.trim();
   if (!email) { document.getElementById('inv-email').focus(); return; }
-  const role = document.getElementById('role-school').classList.contains('active') ? 'school' : 'board';
-  const school = role === 'school' ? document.getElementById('inv-school').value : null;
+  const role = document.getElementById('role-office').classList.contains('active') ? 'office'
+    : document.getElementById('role-school').classList.contains('active') ? 'school'
+    : 'board';
+  const school = (role === 'school' || role === 'office') ? document.getElementById('inv-school').value : null;
 
   const { data, error } = await db.from('admin_invites').insert({
     email: email,
@@ -773,7 +780,7 @@ async function loadAdmins() {
     return `<tr>
       <td><div style="display:flex;align-items:center;gap:11px;"><span class="set-avi${isBoard?'':' school'}">${C.esc(initial)}</span><span style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--ink);">${C.esc(name)}</span></div></td>
       <td>${C.esc(a.email)}</td>
-      <td><span class="role-pill ${a.role}">${isBoard ? 'Board Admin' : 'School Admin'}</span></td>
+      <td><span class="role-pill ${a.role}">${isBoard ? 'Board Admin' : a.role === 'office' ? 'Office Staff' : 'School Admin'}</span></td>
       <td>${isBoard ? '<span style="color:var(--ink-ghost);">— All schools</span>' : C.esc(a.school||'—')}</td>
       <td>${C.relativeTime(a.last_seen)}</td>
       <td><span class="stat-pill">Active</span></td>
@@ -784,7 +791,7 @@ async function loadAdmins() {
     return `<tr>
       <td><div style="display:flex;align-items:center;gap:11px;"><span class="set-avi school">?</span><span style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--ink-soft);">${C.esc(inv.email)}</span></div></td>
       <td>${C.esc(inv.email)}</td>
-      <td><span class="role-pill ${inv.role}">${inv.role === 'board' ? 'Board Admin' : 'School Admin'}</span></td>
+      <td><span class="role-pill ${inv.role}">${inv.role === 'board' ? 'Board Admin' : inv.role === 'office' ? 'Office Staff' : 'School Admin'}</span></td>
       <td>${C.esc(inv.school||'— All schools')}</td>
       <td>${expired ? '<span style="color:var(--health-bad);">Expired</span>' : 'Expires ' + C.fmtDate(inv.expires_at)}</td>
       <td><span class="stat-pill invited">${expired ? 'Expired' : 'Invited'}</span></td>

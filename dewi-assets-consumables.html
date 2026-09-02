@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consumables — Dewi Assets</title>
+<meta name="description" content="Office staff consumables management for Dewi Assets.">
+<link rel="stylesheet" href="dewi.css">
+<link rel="stylesheet" href="dewi-assets.css">
+<link rel="stylesheet" href="dewi-board.css">
+
+<script>
+let db = null;
+function initSupabase() {
+  try {
+    const { createClient } = supabase;
+    db = createClient(
+      'https://ivdkipygpasvowigarfb.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2ZGtpcHlncGFzdm93aWdhcmZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMzA2NzcsImV4cCI6MjA5MjcwNjY3N30.qKN6tCqyyIIVoPAVl1o2_2gtUkfBh2aBWDP_sIDcxgE'
+    );
+  } catch(e) { console.error('Supabase init failed:', e.message); }
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="initSupabase()"></script>
+
+<style>
+/* ─── Sidebar: DA warm-dark brand ─── */
+.sidebar { background: #2A1F12; box-shadow: 4px 0 32px rgba(42,31,18,0.30); }
+.sidebar-logo { padding: 28px 24px 20px; }
+.assets-logo .word { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 700; font-style: italic; color: var(--paper); line-height: 1; letter-spacing: -0.5px; }
+.assets-logo .word .amp { color: #D4A76A; }
+.assets-logo .sub { font-family: 'Jost', sans-serif; font-size: 9.5px; font-weight: 600; letter-spacing: 0.26em; text-transform: uppercase; color: rgba(245,239,228,0.42); margin-top: 8px; }
+
+.sidebar-school { margin: 16px 14px 0; padding: 12px 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; }
+.sidebar-school .lbl { font-size: 9px; font-weight: 600; letter-spacing: 0.20em; text-transform: uppercase; color: rgba(245,239,228,0.4); margin-bottom: 4px; }
+.sidebar-school .name { font-family: 'Cormorant Garamond', serif; font-size: 16px; font-weight: 600; color: var(--paper); line-height: 1.2; }
+.sidebar-school .role { font-size: 11px; color: rgba(245,239,228,0.55); margin-top: 2px; }
+
+.sidebar-user { margin: 0 14px 16px; padding: 12px 14px; background: rgba(0,0,0,0.18); border-radius: 12px; display: flex; align-items: center; gap: 10px; }
+.sidebar-user .avi { width: 32px; height: 32px; border-radius: 50%; background: #D4A76A; color: #2A1F12; display: flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+.sidebar-user .info { min-width: 0; flex: 1; }
+.sidebar-user .name { font-size: 12px; font-weight: 600; color: var(--paper); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sidebar-user .role { font-size: 10px; color: rgba(245,239,228,0.5); letter-spacing: 0.04em; }
+
+/* ─── Consumables table ─── */
+.con-section { margin-bottom: 32px; }
+.con-section-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.con-section-head h2 { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 600; color: var(--ink); letter-spacing: -0.3px; }
+.con-section-head .meta { font-size: 12px; color: var(--ink-soft); margin-left: auto; }
+
+.con-card { background: var(--cream); border: 1px solid var(--paper-deep); border-radius: var(--r-card); box-shadow: var(--shadow-sm); overflow: hidden; }
+.con-table-scroll { overflow-x: auto; }
+.con-table { width: 100%; border-collapse: collapse; }
+.con-table th { background: var(--paper); padding: 11px 18px; font-family: 'Jost', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-soft); text-align: left; border-bottom: 1px solid var(--paper-deep); white-space: nowrap; }
+.con-table th.num { text-align: right; }
+.con-table th.ctr { text-align: center; }
+.con-table th.act { text-align: right; }
+.con-table td { padding: 13px 18px; font-size: 13px; color: var(--ink-mid); border-bottom: 1px solid var(--paper-warm); vertical-align: middle; }
+.con-table tr:last-child td { border-bottom: none; }
+.con-table tbody tr:hover td { background: var(--paper); }
+.con-table td.name { font-family: 'Cormorant Garamond', serif; font-size: 16px; font-weight: 600; color: var(--ink); }
+.con-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.con-table td.ctr { text-align: center; }
+.con-table td.act { text-align: right; white-space: nowrap; }
+
+/* Low-stock row */
+.con-table tr.low-stock td { background: var(--health-warn-lt); }
+.con-table tr.low-stock:hover td { background: #F0E8CC; }
+.con-table tr.low-stock td.name { color: var(--health-warn); }
+.low-badge { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: var(--r-pill); background: var(--health-warn); color: var(--paper); font-family: 'Jost', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; vertical-align: middle; }
+
+.row-act { font-family: 'Jost', sans-serif; font-size: 12px; font-weight: 500; color: var(--tobacco); background: none; border: none; cursor: pointer; padding: 5px 8px; border-radius: 6px; transition: all 0.14s; }
+.row-act:hover { background: var(--tobacco-lt); }
+
+/* Board-visible toggle */
+.bv-toggle { width: 36px; height: 20px; appearance: none; -webkit-appearance: none; background: var(--paper-deep); border-radius: 10px; cursor: pointer; position: relative; transition: background 0.18s; border: none; outline: none; display: inline-block; }
+.bv-toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: var(--paper); transition: transform 0.18s; box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
+.bv-toggle:checked { background: var(--tobacco); }
+.bv-toggle:checked::after { transform: translateX(16px); }
+
+/* ─── Add consumable (collapsible) ─── */
+.add-con-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 15px 18px; background: transparent; border: 1.5px dashed var(--paper-deep); border-radius: 0; color: var(--tobacco); font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; cursor: pointer; transition: all 0.15s; justify-content: center; }
+.add-con-btn:hover { background: var(--tobacco-lt); border-color: var(--tobacco); }
+.add-con-form { display: none; padding: 22px 24px; background: var(--tobacco-soft); border-top: 1px solid var(--paper-warm); }
+.add-con-form.open { display: block; }
+.add-con-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; margin-bottom: 18px; }
+.add-con-grid .wide { grid-column: 1 / -1; }
+.add-field { display: flex; flex-direction: column; gap: 6px; }
+.add-label { font-family: 'Jost', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); }
+.add-label .opt { font-weight: 500; letter-spacing: 0.04em; text-transform: none; color: var(--ink-ghost); }
+.add-input { background: var(--paper); border: 1.5px solid var(--paper-deep); border-radius: var(--r-pill); padding: 10px 16px; font-family: 'Jost', sans-serif; font-size: 13px; color: var(--ink); outline: none; transition: all 0.18s; width: 100%; }
+.add-input:focus { border-color: var(--tobacco); box-shadow: 0 0 0 3px var(--tobacco-glow); background: var(--cream); }
+.add-input::placeholder { color: var(--ink-ghost); }
+.add-con-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.btn-add-save { background: var(--tobacco); color: var(--paper); border: none; border-radius: var(--r-pill); padding: 11px 24px; font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; cursor: pointer; transition: all 0.18s; box-shadow: 0 3px 14px var(--tobacco-glow); }
+.btn-add-save:hover { background: var(--tobacco-mid); transform: translateY(-1px); }
+.btn-add-cancel { background: var(--cream); color: var(--ink-mid); border: 1.5px solid var(--paper-deep); border-radius: var(--r-pill); padding: 10px 20px; font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+.btn-add-cancel:hover { background: var(--paper-warm); }
+
+/* ─── Adjust stock modal ─── */
+.modal-scrim { position: fixed; inset: 0; background: rgba(20,14,8,0.55); backdrop-filter: blur(3px); z-index: 500; display: none; align-items: center; justify-content: center; padding: 24px; }
+.modal-scrim.open { display: flex; }
+.modal { background: var(--cream); border-radius: var(--r-card); max-width: 440px; width: 100%; box-shadow: var(--shadow-xl); overflow: hidden; border-top: 4px solid var(--tobacco); }
+.modal-head { padding: 26px 30px 18px; border-bottom: 1px solid var(--paper-deep); }
+.modal-head .eyebrow { font-family: 'Jost', sans-serif; font-size: 9.5px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--tobacco); margin-bottom: 8px; }
+.modal-head h3 { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 600; color: var(--ink); letter-spacing: -0.3px; line-height: 1.1; }
+.modal-body { padding: 22px 30px; display: flex; flex-direction: column; gap: 16px; }
+.modal-field { display: flex; flex-direction: column; gap: 6px; }
+.modal-label { font-family: 'Jost', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); }
+.modal-stock-display { font-family: 'Cormorant Garamond', serif; font-size: 18px; color: var(--ink-mid); }
+.modal-stock-display strong { color: var(--ink); }
+.modal-input { background: var(--paper); border: 1.5px solid var(--paper-deep); border-radius: var(--r-pill); padding: 12px 18px; font-family: 'Jost', sans-serif; font-size: 14px; color: var(--ink); outline: none; transition: all 0.18s; width: 100%; }
+.modal-input:focus { border-color: var(--tobacco); box-shadow: 0 0 0 3px var(--tobacco-glow); background: var(--cream); }
+.modal-input::placeholder { color: var(--ink-ghost); }
+.modal-foot { padding: 16px 30px 24px; display: flex; gap: 10px; justify-content: flex-end; border-top: 1px solid var(--paper-warm); }
+.modal-cancel { background: var(--cream); color: var(--ink-mid); border: 1.5px solid var(--paper-deep); border-radius: var(--r-pill); padding: 10px 20px; font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+.modal-cancel:hover { background: var(--paper-warm); }
+.modal-confirm { background: var(--tobacco); color: var(--paper); border: none; border-radius: var(--r-pill); padding: 11px 22px; font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; box-shadow: 0 3px 14px var(--tobacco-glow); }
+.modal-confirm:hover { background: var(--tobacco-mid); transform: translateY(-1px); }
+
+/* Empty state */
+.empty-state { padding: 56px 24px; text-align: center; }
+.empty-state .glyph { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 36px; color: var(--ink-ghost); margin-bottom: 12px; }
+.empty-state p { font-size: 13px; color: var(--ink-soft); line-height: 1.6; }
+
+@media (max-width: 860px) {
+  .add-con-grid { grid-template-columns: 1fr; }
+  .add-con-grid .wide { grid-column: 1; }
+  .con-table-scroll { overflow-x: auto; }
+  .con-table { min-width: 700px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═════════ Sidebar ═════════ -->
+<aside class="sidebar">
+  <a href="dewi-assets-consumables.html" class="sidebar-logo assets-logo" style="text-decoration:none">
+    <div class="word">Dewi<span class="amp"> Assets</span></div>
+    <div class="sub">Office Administration</div>
+  </a>
+
+  <div class="sidebar-school">
+    <div class="lbl">Signed in to</div>
+    <div class="name" id="sb-school">—</div>
+    <div class="role">Office Staff · Consumables</div>
+  </div>
+
+  <div class="sidebar-user" style="margin-top:auto">
+    <div class="avi" id="sb-avi">·</div>
+    <div class="info">
+      <div class="name" id="sb-user">—</div>
+      <div class="role">Office Staff</div>
+    </div>
+    <button class="sb-signout" onclick="AssetsCore.signOutAdmin()">Sign out</button>
+  </div>
+</aside>
+
+<!-- ═════════ Main ═════════ -->
+<main class="main">
+
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" style="font-style:italic;">Consumables</div>
+      <div style="font-family:'Jost',sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-ghost);margin-top:2px" id="tb-school-label">—</div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-stat">Signed in as <strong style="color:var(--tobacco);" id="tb-user">—</strong></div>
+      <button class="btn btn-secondary btn-sm" onclick="AssetsCore.signOutAdmin()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <div class="page-head">
+      <div>
+        <div class="eyebrow" id="ph-eyebrow">Office · Consumables</div>
+        <h1>Consumables</h1>
+        <p class="sub" id="ph-sub">Track stock levels and reorder thresholds for your school.</p>
+      </div>
+    </div>
+
+    <!-- ═══ Stock inventory ═══ -->
+    <section class="con-section">
+      <div class="con-section-head">
+        <h2>Stock inventory</h2>
+        <span class="meta" id="con-meta"></span>
+      </div>
+      <div class="con-card">
+        <div class="con-table-scroll">
+          <table class="con-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Category</th>
+                <th class="num">In stock</th>
+                <th class="num">Reorder at</th>
+                <th class="ctr">Board visible</th>
+                <th class="act">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="con-tbody">
+              <tr><td colspan="6"><div class="empty-state"><div class="glyph">Loading…</div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <button class="add-con-btn" type="button" onclick="toggleAddForm()">+ Add a consumable item</button>
+
+        <div class="add-con-form" id="add-con-form">
+          <div class="add-con-grid">
+            <div class="add-field wide">
+              <label class="add-label" for="ac-name">Item name</label>
+              <input class="add-input" id="ac-name" type="text" placeholder="e.g. Copy paper, Dry-erase markers">
+            </div>
+            <div class="add-field">
+              <label class="add-label" for="ac-category">Category</label>
+              <input class="add-input" id="ac-category" type="text" placeholder="e.g. Office supplies">
+            </div>
+            <div class="add-field">
+              <label class="add-label" for="ac-unit">Unit</label>
+              <input class="add-input" id="ac-unit" type="text" placeholder="e.g. reams, boxes, packs">
+            </div>
+            <div class="add-field">
+              <label class="add-label" for="ac-stock">Current stock</label>
+              <input class="add-input" id="ac-stock" type="number" min="0" placeholder="0">
+            </div>
+            <div class="add-field">
+              <label class="add-label" for="ac-reorder">Reorder threshold</label>
+              <input class="add-input" id="ac-reorder" type="number" min="0" placeholder="5">
+            </div>
+            <div class="add-field">
+              <label class="add-label" for="ac-reorder-qty">Reorder quantity <span class="opt">· optional</span></label>
+              <input class="add-input" id="ac-reorder-qty" type="number" min="1">
+            </div>
+            <div class="add-field">
+              <label class="add-label" for="ac-supplier">Supplier <span class="opt">· optional</span></label>
+              <input class="add-input" id="ac-supplier" type="text">
+            </div>
+            <div class="add-field">
+              <label class="add-label" for="ac-cost">Unit cost <span class="opt">· optional</span></label>
+              <input class="add-input" id="ac-cost" type="number" min="0" step="0.01" placeholder="0.00">
+            </div>
+            <div class="add-field">
+              <label class="add-label" for="ac-location">Location <span class="opt">· optional</span></label>
+              <input class="add-input" id="ac-location" type="text" placeholder="e.g. Supply room A">
+            </div>
+            <div class="add-field wide">
+              <label class="add-label" for="ac-desc">Description <span class="opt">· optional</span></label>
+              <input class="add-input" id="ac-desc" type="text">
+            </div>
+          </div>
+          <div class="add-con-actions">
+            <button class="btn-add-cancel" type="button" onclick="toggleAddForm()">Cancel</button>
+            <button class="btn-add-save" type="button" onclick="addConsumable()">Add item</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="board-foot">
+      <div class="meta">
+        <span>© 2026 Dewi · Anchored Development Co</span>
+        <span class="sep">·</span>
+        <a href="#">Privacy</a>
+        <span class="sep">·</span>
+        <a href="#">FERPA / PIPEDA</a>
+      </div>
+      <div class="status">All systems operational</div>
+    </footer>
+
+  </div>
+</main>
+
+<!-- Adjust stock modal -->
+<div class="modal-scrim" id="adjust-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="eyebrow">Adjust stock</div>
+      <h3 id="adj-item-name">Item</h3>
+    </div>
+    <div class="modal-body">
+      <div class="modal-stock-display">Current stock: <strong id="adj-current">—</strong> <span id="adj-unit-label"></span></div>
+      <div class="modal-field">
+        <label class="modal-label" for="adj-qty">Quantity change</label>
+        <input class="modal-input" id="adj-qty" type="number" placeholder="+10 to restock, −3 to use">
+      </div>
+      <div class="modal-field">
+        <label class="modal-label" for="adj-reason">Reason <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink-ghost);">· optional</span></label>
+        <input class="modal-input" id="adj-reason" type="text" placeholder="e.g. Weekly restock, Classroom use">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="modal-cancel" onclick="closeAdjust()">Cancel</button>
+      <button class="modal-confirm" onclick="submitAdjust()">Save adjustment</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" style="position:fixed;bottom:28px;left:50%;transform:translate(-50%,20px);z-index:600;background:var(--ink);color:var(--paper);padding:13px 22px;border-radius:var(--r-pill);font-family:'Jost',sans-serif;font-size:13px;font-weight:500;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:all 0.3s cubic-bezier(0.16,1,0.3,1);"></div>
+
+<script src="dewi-assets-core.js"></script>
+<script>
+const C = AssetsCore;
+let PROFILE = null;
+let CONSUMABLES = [];
+let ADJ_ID = null;
+
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.opacity = '1';
+  t.style.transform = 'translate(-50%, 0)';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transform = 'translate(-50%, 20px)';
+  }, 2800);
+}
+
+async function loadConsumables() {
+  const { data, error } = await db.from('consumables').select('*')
+    .eq('school', PROFILE.school).order('item_name');
+  if (error) { toast('Failed to load: ' + error.message); return; }
+  CONSUMABLES = data || [];
+  renderConsumables();
+}
+
+function renderConsumables() {
+  const tbody = document.getElementById('con-tbody');
+  const meta = document.getElementById('con-meta');
+  const low = CONSUMABLES.filter(c => c.current_stock <= c.reorder_threshold);
+
+  meta.textContent = CONSUMABLES.length
+    ? CONSUMABLES.length + ' item' + (CONSUMABLES.length === 1 ? '' : 's') +
+      (low.length ? ' · ' + low.length + ' low' : '')
+    : '';
+
+  if (!CONSUMABLES.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">' +
+      '<div class="glyph">Nothing yet</div>' +
+      '<p>Add your first consumable item using the button below.</p>' +
+      '</div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = CONSUMABLES.map(function(c) {
+    var isLow = c.current_stock <= c.reorder_threshold;
+    return '<tr class="' + (isLow ? 'low-stock' : '') + '">' +
+      '<td class="name">' + C.esc(c.item_name) + (isLow ? '<span class="low-badge">Low</span>' : '') + '</td>' +
+      '<td>' + C.esc(c.category || '—') + '</td>' +
+      '<td class="num">' + c.current_stock + (c.unit ? ' <span style="color:var(--ink-ghost);font-size:11px;">' + C.esc(c.unit) + '</span>' : '') + '</td>' +
+      '<td class="num">' + c.reorder_threshold + '</td>' +
+      '<td class="ctr"><input type="checkbox" class="bv-toggle"' + (c.board_visible ? ' checked' : '') +
+        ' onchange="toggleBoardVisible(\'' + c.id + '\', this.checked)"' +
+        ' title="' + (c.board_visible ? 'Visible to board' : 'Hidden from board') + '"></td>' +
+      '<td class="act"><button class="row-act" onclick="openAdjust(\'' + c.id + '\')">Adjust stock</button></td>' +
+      '</tr>';
+  }).join('');
+}
+
+// ── Add consumable ──
+function toggleAddForm() {
+  var form = document.getElementById('add-con-form');
+  form.classList.toggle('open');
+  if (form.classList.contains('open')) document.getElementById('ac-name').focus();
+}
+
+async function addConsumable() {
+  var name = document.getElementById('ac-name').value.trim();
+  if (!name) { document.getElementById('ac-name').focus(); return; }
+
+  var stock = parseInt(document.getElementById('ac-stock').value, 10) || 0;
+  var threshold = parseInt(document.getElementById('ac-reorder').value, 10) || 0;
+  var reorderQtyVal = document.getElementById('ac-reorder-qty').value.trim();
+  var costVal = document.getElementById('ac-cost').value.trim();
+
+  var row = {
+    school: PROFILE.school,
+    item_name: name,
+    description: document.getElementById('ac-desc').value.trim() || null,
+    category: document.getElementById('ac-category').value.trim() || null,
+    unit: document.getElementById('ac-unit').value.trim() || null,
+    current_stock: stock,
+    reorder_threshold: threshold,
+    reorder_quantity: reorderQtyVal ? parseInt(reorderQtyVal, 10) : null,
+    supplier: document.getElementById('ac-supplier').value.trim() || null,
+    unit_cost: costVal ? parseFloat(costVal) : null,
+    location: document.getElementById('ac-location').value.trim() || null,
+    board_visible: false
+  };
+
+  var { error } = await db.from('consumables').insert(row);
+  if (error) { toast('Error: ' + error.message); return; }
+
+  toast('Added: ' + name);
+  ['ac-name','ac-desc','ac-category','ac-unit','ac-stock','ac-reorder','ac-reorder-qty','ac-supplier','ac-cost','ac-location']
+    .forEach(function(id) { document.getElementById(id).value = ''; });
+  document.getElementById('add-con-form').classList.remove('open');
+  await loadConsumables();
+}
+
+// ── Adjust stock ──
+function openAdjust(id) {
+  var c = CONSUMABLES.find(function(x) { return x.id === id; });
+  if (!c) return;
+  ADJ_ID = id;
+  document.getElementById('adj-item-name').textContent = c.item_name;
+  document.getElementById('adj-current').textContent = c.current_stock;
+  document.getElementById('adj-unit-label').textContent = c.unit || '';
+  document.getElementById('adj-qty').value = '';
+  document.getElementById('adj-reason').value = '';
+  document.getElementById('adjust-modal').classList.add('open');
+  setTimeout(function() { document.getElementById('adj-qty').focus(); }, 80);
+}
+
+function closeAdjust() {
+  document.getElementById('adjust-modal').classList.remove('open');
+  ADJ_ID = null;
+}
+
+async function submitAdjust() {
+  var c = CONSUMABLES.find(function(x) { return x.id === ADJ_ID; });
+  if (!c) return;
+
+  var delta = parseInt(document.getElementById('adj-qty').value, 10);
+  if (!delta || isNaN(delta)) { document.getElementById('adj-qty').focus(); return; }
+
+  var newStock = Math.max(0, c.current_stock + delta);
+  var reason = document.getElementById('adj-reason').value.trim() || null;
+
+  var results = await Promise.all([
+    db.from('consumables').update({ current_stock: newStock }).eq('id', ADJ_ID),
+    db.from('stock_log').insert({
+      consumable_id: ADJ_ID,
+      change: delta,
+      new_stock: newStock,
+      reason: reason,
+      logged_by: PROFILE.id
+    })
+  ]);
+
+  var updErr = results[0].error;
+  var logErr = results[1].error;
+  if (updErr || logErr) {
+    toast('Error: ' + (updErr || logErr).message);
+    return;
+  }
+
+  closeAdjust();
+  toast((delta > 0 ? '+' : '') + delta + ' — new stock: ' + newStock);
+  await loadConsumables();
+}
+
+// ── Board visible toggle ──
+async function toggleBoardVisible(id, visible) {
+  var { error } = await db.from('consumables').update({ board_visible: visible }).eq('id', id);
+  if (error) {
+    toast('Error: ' + error.message);
+    await loadConsumables();
+    return;
+  }
+  var c = CONSUMABLES.find(function(x) { return x.id === id; });
+  if (c) c.board_visible = visible;
+}
+
+AssetsCore.boot({
+  allow: ['office'],
+  onReady: async function(ctx) {
+    PROFILE = ctx.profile;
+    var name = PROFILE.full_name || PROFILE.email || '·';
+    document.getElementById('sb-user').textContent = name;
+    document.getElementById('sb-avi').textContent = name.charAt(0).toUpperCase();
+    document.getElementById('sb-school').textContent = PROFILE.school || '—';
+    document.getElementById('tb-user').textContent = name;
+    document.getElementById('tb-school-label').textContent = (PROFILE.school || '') + ' · Office staff';
+    document.getElementById('ph-eyebrow').textContent = (PROFILE.school || 'Office') + ' · Consumables';
+    document.getElementById('ph-sub').textContent = 'Track stock levels and reorder thresholds for ' + (PROFILE.school || 'your school') + '.';
+    await loadConsumables();
+  }
+});
+</script>
+
+</body>
+</html>
