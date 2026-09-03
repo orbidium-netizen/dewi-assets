@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+Disallow: /dewi-assets-dashboard
+Disallow: /dewi-assets-fleet
+Disallow: /dewi-assets-scan
+Disallow: /dewi-assets-search
+Disallow: /dewi-assets-board
+Disallow: /dewi-assets-consumables
+Disallow: /dewi-assets-school
+Disallow: /dewi-assets-cart
+Disallow: /dewi-assets-reports
+Disallow: /dewi-assets-settings
+Disallow: /dewi-assets-cart-planner
+
+Sitemap: https://dewiassets.com/sitemap.xml
