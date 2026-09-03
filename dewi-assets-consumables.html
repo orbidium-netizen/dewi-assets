@@ -382,7 +382,9 @@ async function addConsumable() {
   if (!name) { document.getElementById('ac-name').focus(); return; }
 
   var stock = parseInt(document.getElementById('ac-stock').value, 10) || 0;
-  var threshold = parseInt(document.getElementById('ac-reorder').value, 10) || 0;
+  var thresholdRaw = document.getElementById('ac-reorder').value.trim();
+  if (!thresholdRaw) { document.getElementById('ac-reorder').focus(); return; }
+  var threshold = parseInt(thresholdRaw, 10);
   var reorderQtyVal = document.getElementById('ac-reorder-qty').value.trim();
   var costVal = document.getElementById('ac-cost').value.trim();
 
@@ -398,7 +400,8 @@ async function addConsumable() {
     supplier: document.getElementById('ac-supplier').value.trim() || null,
     unit_cost: costVal ? parseFloat(costVal) : null,
     location: document.getElementById('ac-location').value.trim() || null,
-    board_visible: false
+    board_visible: false,
+    created_by: PROFILE.id
   };
 
   var { error } = await db.from('consumables').insert(row);
