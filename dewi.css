@@ -1,6 +1,6 @@
 /* ============================================================
    DEWI v2 — Master Design System
-   dewey.css
+   dewi.css
    Import this file on every page.
    Last updated: 2025
    ============================================================ */
@@ -779,23 +779,6 @@ h1, h2, h3, h4, h5, h6 {
 /* ============================================================
    13. TABLES
    ============================================================ */
-.dewey-table { width: 100%; border-collapse: collapse; }
-.dewey-table th {
-  background: var(--paper);
-  padding: 10px 16px;
-  font-size: var(--text-xs); font-weight: 600;
-  letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--ink-soft); text-align: left;
-  border-bottom: 1px solid var(--paper-deep);
-}
-.dewey-table td {
-  padding: 12px 16px; font-size: 13px;
-  color: var(--ink-mid); border-bottom: 1px solid var(--paper-warm);
-  vertical-align: middle;
-}
-.dewey-table tr:last-child td { border-bottom: none; }
-.dewey-table tr:hover td { background: var(--paper); }
-.dewey-table td:first-child { font-family: 'Cormorant Garamond', serif; font-size: 15px; font-weight: 600; color: var(--ink); }
 
 /* Condition select */
 .condition-select {
